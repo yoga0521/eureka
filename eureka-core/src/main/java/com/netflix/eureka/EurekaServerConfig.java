@@ -43,6 +43,8 @@ public interface EurekaServerConfig {
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
      *
+     * AWS相关，跳过
+     *
      * @return
      */
     String getAWSAccessId();
@@ -51,6 +53,8 @@ public interface EurekaServerConfig {
      * Gets the <em>AWS Secret Key</em>. This is primarily used for
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
+     *
+     * AWS相关，跳过
      *
      * @return
      */
@@ -63,6 +67,8 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
+     *
+     * AWS相关，跳过
      *
      * @return the number of times the server should try to bind to the
      *         candidate EIP.
@@ -77,6 +83,8 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
+     * AWS相关，跳过
+     *
      * @return the time in milliseconds.
      */
     int getEIPBindingRetryIntervalMsWhenUnbound();
@@ -88,6 +96,8 @@ public interface EurekaServerConfig {
      * <p>
      * <em>The changes are effective at runtime.</em>
      * </p>
+     *
+     * AWS相关，跳过
      *
      * @return the time in milliseconds.
      */
@@ -107,6 +117,8 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
+     * 是否开启自我保护模式
+     *
      * @return true to enable self preservation, false otherwise.
      */
     boolean shouldEnableSelfPreservation();
@@ -121,6 +133,8 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
+     * 自我保护百分比阈值，超过这个值就会开启自我保护模式。默认为0.85
+     *
      * @return value between 0 and 1 indicating the percentage. For example,
      *         <code>85%</code> will be specified as <code>0.85</code>.
      */
@@ -129,6 +143,8 @@ public interface EurekaServerConfig {
     /**
      * The interval with which the threshold as specified in
      * {@link #getRenewalPercentThreshold()} needs to be updated.
+     *
+     * 自我保护阈值更新的时间间隔，单位为毫秒（ms）
      *
      * @return time in milliseconds indicating the interval.
      */
@@ -143,6 +159,8 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
+     * eureka集群节点更新时间间隔，单位为毫秒（ms）
+     *
      * @return timer in milliseconds indicating the interval.
      */
     int getPeerEurekaNodesUpdateIntervalMs();
@@ -150,6 +168,8 @@ public interface EurekaServerConfig {
     /**
      * If set to true, the replicated data send in the request will be always compressed.
      * This does not define response path, which is driven by "Accept-Encoding" header.
+     *
+     * 是否开启eureka集群之间复制信息请求压缩
      */
     boolean shouldEnableReplicatedRequestCompression();
 
@@ -162,6 +182,7 @@ public interface EurekaServerConfig {
      *
      * @return the number of retries.
      */
+    @Deprecated
     int getNumberOfReplicationRetries();
 
     /**
@@ -173,6 +194,7 @@ public interface EurekaServerConfig {
      *
      * @return time in milliseconds indicating the interval.
      */
+    @Deprecated
     int getPeerEurekaStatusRefreshTimeIntervalMs();
 
     /**
@@ -185,6 +207,8 @@ public interface EurekaServerConfig {
      * clients start to send heartbeats and the server requests the clients for
      * registration information.
      *
+     * 如果eureka在启动的时候，获取不到注册信息，就等待。单位为毫秒（ms）
+     *
      * @return time in milliseconds.
      */
     int getWaitTimeInMsWhenSyncEmpty();
@@ -192,6 +216,8 @@ public interface EurekaServerConfig {
     /**
      * Gets the timeout value for connecting to peer eureka nodes for
      * replication.
+     *
+     * eureka集群节点之间请求连接超时的时间（进行复制信息操作），单位为毫秒（ms）
      *
      * @return timeout value in milliseconds.
      */
@@ -201,6 +227,8 @@ public interface EurekaServerConfig {
      * Gets the timeout value for reading information from peer eureka nodes for
      * replication.
      *
+     * eureka集群节点之间请求读取超时的时间（进行复制信息操作），单位为毫秒（ms）
+     *
      * @return timeout value in milliseconds.
      */
     int getPeerNodeReadTimeoutMs();
@@ -208,6 +236,8 @@ public interface EurekaServerConfig {
     /**
      * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
      * nodes for replication.
+     *
+     * eureka集群节点之间请求的连接总数（进行复制信息操作）
      *
      * @return total number of allowed <em>HTTP</em> connections.
      */
