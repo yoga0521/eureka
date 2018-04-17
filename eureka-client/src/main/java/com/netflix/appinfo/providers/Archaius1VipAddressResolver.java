@@ -21,6 +21,7 @@ public class Archaius1VipAddressResolver implements VipAddressResolver {
 
         String result = vipAddressMacro;
 
+        //匹配${(.*?)}
         Matcher matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
         while (matcher.find()) {
             String key = matcher.group(1);
@@ -30,6 +31,7 @@ public class Archaius1VipAddressResolver implements VipAddressResolver {
             logger.debug(", att key:{}", key);
             logger.debug(", att value:{}", value);
             logger.debug("");
+            //将${(.*?)}替换为配置文件中对应的value
             result = result.replaceAll("\\$\\{" + key + "\\}", value);
             matcher = VIP_ATTRIBUTES_PATTERN.matcher(result);
         }
