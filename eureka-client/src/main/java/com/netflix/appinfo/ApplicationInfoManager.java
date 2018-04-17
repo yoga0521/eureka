@@ -49,6 +49,7 @@ public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
 
     private static final InstanceStatusMapper NO_OP_MAPPER = new InstanceStatusMapper() {
+        //直接返回map参数
         @Override
         public InstanceStatus map(InstanceStatus prev) {
             return prev;
@@ -57,10 +58,22 @@ public class ApplicationInfoManager {
 
     private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
 
+    /**
+     * 状态变更监听器，key为statusChangeListener，value为监听器
+     */
     protected final Map<String, StatusChangeListener> listeners;
+    /**
+     * 匹配实例状态的对象
+     */
     private final InstanceStatusMapper instanceStatusMapper;
 
+    /**
+     * 实例信息
+     */
     private InstanceInfo instanceInfo;
+    /**
+     * 实例配置
+     */
     private EurekaInstanceConfig config;
 
     public static class OptionalArgs {
@@ -68,10 +81,12 @@ public class ApplicationInfoManager {
 
         @com.google.inject.Inject(optional = true)
         public void setInstanceStatusMapper(InstanceStatusMapper instanceStatusMapper) {
+            //设置状态匹配对象
             this.instanceStatusMapper = instanceStatusMapper;
         }
 
         InstanceStatusMapper getInstanceStatusMapper() {
+            //返回状态匹配对象，默认为NO_OP_MAPPER
             return instanceStatusMapper == null ? NO_OP_MAPPER : instanceStatusMapper;
         }
     }
@@ -86,8 +101,10 @@ public class ApplicationInfoManager {
         this.instanceInfo = instanceInfo;
         this.listeners = new ConcurrentHashMap<String, StatusChangeListener>();
         if (optionalArgs != null) {
+            //设置状态匹配对象
             this.instanceStatusMapper = optionalArgs.getInstanceStatusMapper();
         } else {
+            //默认情况下为NO_OP_MAPPER
             this.instanceStatusMapper = NO_OP_MAPPER;
         }
 
@@ -119,9 +136,14 @@ public class ApplicationInfoManager {
         return instance;
     }
 
+    /**
+     * 初始化实例信息
+     */
     public void initComponent(EurekaInstanceConfig config) {
         try {
+            //设置实例配置对象
             this.config = config;
+            //设置实例信息
             this.instanceInfo = new EurekaConfigBasedInstanceInfoProvider(config).get();
         } catch (Throwable e) {
             throw new RuntimeException("Failed to initialize ApplicationInfoManager", e);
@@ -162,6 +184,8 @@ public class ApplicationInfoManager {
      * whether it is ready to receive traffic. Setting the status here also notifies all registered listeners
      * of a status change event.
      *
+     * 设置实例状态
+     *
      * @param status Status of the instance
      */
     public synchronized void setInstanceStatus(InstanceStatus status) {
@@ -174,6 +198,7 @@ public class ApplicationInfoManager {
         if (prev != null) {
             for (StatusChangeListener listener : listeners.values()) {
                 try {
+                    //发送通知
                     listener.notify(new StatusChangeEvent(prev, next));
                 } catch (Exception e) {
                     logger.warn("failed to notify listener: {}", listener.getId(), e);
@@ -182,10 +207,16 @@ public class ApplicationInfoManager {
         }
     }
 
+    /**
+     * 设置监听器
+     */
     public void registerStatusChangeListener(StatusChangeListener listener) {
         listeners.put(listener.getId(), listener);
     }
 
+    /**
+     * 删除监听器
+     */
     public void unregisterStatusChangeListener(String listenerId) {
         listeners.remove(listenerId);
     }
@@ -194,6 +225,8 @@ public class ApplicationInfoManager {
      * Refetches the hostname to check if it has changed. If it has, the entire
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
+     *
+     *
      *
      * see {@link InstanceInfo#getHostName()} for explanation on why the hostname is used as the default address
      */
@@ -217,6 +250,7 @@ public class ApplicationInfoManager {
             // We will most likely re-write the client at sometime so not fixing for now.
             InstanceInfo.Builder builder = new InstanceInfo.Builder(instanceInfo);
             builder.setHostName(newAddress).setIPAddr(newIp).setDataCenterInfo(config.getDataCenterInfo());
+            //设置isDirty，触发定时注册
             instanceInfo.setIsDirty();
         }
     }
@@ -226,24 +260,34 @@ public class ApplicationInfoManager {
         if (leaseInfo == null) {
             return;
         }
+        //获取最新的租约过期时间
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
+        //获取最新的租约续约时间间隔
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
         if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
+            //创建最新的租约信息
             LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
                     .setRenewalIntervalInSecs(currentLeaseRenewal)
                     .setDurationInSecs(currentLeaseDuration)
                     .build();
             instanceInfo.setLeaseInfo(newLeaseInfo);
+            //设置isDirty，触发定时注册
             instanceInfo.setIsDirty();
         }
     }
 
+    /**
+     * 状态改变监听器接口
+     */
     public static interface StatusChangeListener {
         String getId();
 
         void notify(StatusChangeEvent statusChangeEvent);
     }
 
+    /**
+     * 实例状态匹配接口
+     */
     public static interface InstanceStatusMapper {
 
         /**
