@@ -65,22 +65,40 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE + ".";
+    /**
+     * 默认有效区
+     */
     public static final String DEFAULT_ZONE = "defaultZone";
 
+    /**
+     * 命名空间
+     */
     private final String namespace;
+    /**
+     * 配置文件对象
+     */
     private final DynamicPropertyFactory configInstance;
+    /**
+     * Eureka Http传输通信配置
+     */
     private final EurekaTransportConfig transportConfig;
 
+    /**
+     * 无参构造函数，默认的命名空间为eureka
+     */
     public DefaultEurekaClientConfig() {
         this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
     public DefaultEurekaClientConfig(String namespace) {
+        //实现eureka.xxx属性的格式
         this.namespace = namespace.endsWith(".")
                 ? namespace
                 : namespace + ".";
 
+        //初始化配置文件对象
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
+        //设置Http传输配置
         this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 
@@ -90,6 +108,10 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
      * @see
      * com.netflix.discovery.EurekaClientConfig#getRegistryFetchIntervalSeconds
      * ()
+     */
+    /**
+     * 举例一个方法，从配置文件中获取读取注册信息的时间间隔，并传一个默认值（这里是30）
+     * REGISTRY_REFRESH_INTERVAL_KEY，属性key都在PropertyBasedClientConfigConstants中
      */
     @Override
     public int getRegistryFetchIntervalSeconds() {
@@ -516,6 +538,10 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         return configInstance.getStringProperty(namespace + CONFIG_EXPERIMENTAL_PREFIX + "." + name, null).get();
     }
 
+    /**
+     * 获取eureka Http传输配置
+     * @return eureka Http传输配置
+     */
     @Override
     public EurekaTransportConfig getTransportConfig() {
         return transportConfig;

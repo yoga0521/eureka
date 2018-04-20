@@ -50,14 +50,31 @@ import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
  */
 public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig implements EurekaInstanceConfig {
 
+    /**
+     * 命名空间
+     */
     protected final String namespace;
+    /**
+     * 配置文件对象
+     */
     protected final DynamicPropertyFactory configInstance;
+    /**
+     * 从环境变量中获取应用分组
+     */
     private String appGrpNameFromEnv;
 
+    /**
+     * 无参构造函数，默认的命名空间为eureka
+     */
     public PropertiesInstanceConfig() {
         this(CommonConstants.DEFAULT_CONFIG_NAMESPACE);
     }
 
+    /**
+     * 含有命名空间的有参构造函数，默认的数据中心为MyOwn
+     *
+     * @param namespace 命名空间
+     */
     public PropertiesInstanceConfig(String namespace) {
         this(namespace, new DataCenterInfo() {
             @Override
@@ -67,16 +84,26 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         });
     }
 
+    /**
+     * 含有命名空间和数据中心的有参构造函数
+     *
+     * @param namespace
+     * @param info
+     */
     public PropertiesInstanceConfig(String namespace, DataCenterInfo info) {
+        //调用父类的构造函数设置数据中心
         super(info);
 
+        //实现eureka.xx属性
         this.namespace = namespace.endsWith(".")
                 ? namespace
                 : namespace + ".";
 
+        //从配置文件中获取应用分组，FALLBACK_APP_GROUP_KEY为NETFLIX_APP_GROUP，
         appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
                 .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
 
+        //初始化configInstance
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);
     }
 
@@ -84,6 +111,10 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      * (non-Javadoc)
      *
      * @see com.netflix.appinfo.AbstractInstanceConfig#isInstanceEnabledOnit()
+     */
+    /**
+     * 举例一个方法，从配置文件中获取是否在实例初始化的时候开启，并传一个默认值（这里是父类AbstractInstanceConfig中实现的方法）
+     * TRAFFIC_ENABLED_ON_INIT_KEY，属性key都在PropertyBasedInstanceConfigConstants中
      */
     @Override
     public boolean isInstanceEnabledOnit() {
@@ -207,15 +238,30 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
      * metadata keys are searched under the namespace
      * <code>eureka.appinfo.metadata</code>.
      * </p>
+     *
+     * 这个方法比较特殊
      */
     @Override
     public Map<String, String> getMetadataMap() {
+        //构建元数据的命名空间
         String metadataNamespace = namespace + INSTANCE_METADATA_PREFIX + ".";
+        //创建元数据保存的map
         Map<String, String> metadataMap = new LinkedHashMap<String, String>();
+        //获取配置
         Configuration config = (Configuration) configInstance.getBackingConfigurationSource();
+        //获取前缀
         String subsetPrefix = metadataNamespace.charAt(metadataNamespace.length() - 1) == '.'
                 ? metadataNamespace.substring(0, metadataNamespace.length() - 1)
                 : metadataNamespace;
+        /**
+         * 将配置属性中的前缀去掉，然后获取key ，再获取value，放入map中返回
+         * subset的作用如下：
+         *    prefix.a = 1
+         *    prefix.b = 2
+         *    通过subset("prefix")方法
+         *	  a = 1
+         *	  b = 2
+         */
         for (Iterator<String> iter = config.subset(subsetPrefix).getKeys(); iter.hasNext(); ) {
             String key = iter.next();
             String value = config.getString(subsetPrefix + "." + key);
@@ -294,6 +340,10 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
         return result == null ? new String[0] : result.split(",");
     }
 
+    /**
+     * 获取命名空间
+     * @return 命名空间
+     */
     @Override
     public String getNamespace() {
         return this.namespace;

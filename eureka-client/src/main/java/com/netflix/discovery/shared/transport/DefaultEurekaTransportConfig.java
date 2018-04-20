@@ -10,10 +10,17 @@ import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfi
 public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
     private static final String SUB_NAMESPACE = TRANSPORT_CONFIG_SUB_NAMESPACE + ".";
 
+    /**
+     * 命名空间
+     */
     private final String namespace;
+    /**
+     * 配置文件对象
+     */
     private final DynamicPropertyFactory configInstance;
 
     public DefaultEurekaTransportConfig(String parentNamespace, DynamicPropertyFactory configInstance) {
+        //实现eureka.transport.xx属性或者transport.xx属性的格式
         this.namespace = parentNamespace == null
                 ? SUB_NAMESPACE
                 : (parentNamespace.endsWith(".")
@@ -22,6 +29,10 @@ public class DefaultEurekaTransportConfig implements EurekaTransportConfig {
         this.configInstance = configInstance;
     }
 
+    /**
+     * 举例一个方法，Eureka-Client 会话重新连接的时间间隔，并传一个默认值（这里是20*60）
+     * SESSION_RECONNECT_INTERVAL_KEY，属性key都在PropertyBasedTransportConfigConstants中
+     */
     @Override
     public int getSessionedClientReconnectIntervalSeconds() {
         return configInstance.getIntProperty(namespace + SESSION_RECONNECT_INTERVAL_KEY, Values.SESSION_RECONNECT_INTERVAL).get();
