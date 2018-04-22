@@ -34,6 +34,8 @@ public interface EurekaClient extends LookupService {
     // ========================
 
     /**
+     * 获取指定区域中的Applications
+     *
      * @param region the region that the Applications reside in
      * @return an {@link com.netflix.discovery.shared.Applications} for the matching region. a Null value
      *         is treated as the local region.
@@ -43,6 +45,8 @@ public interface EurekaClient extends LookupService {
     /**
      * Get all applications registered with a specific eureka service.
      *
+     * 获取指定的Eureka服务中注册的应用集合
+     *
      * @param serviceUrl The string representation of the service url.
      * @return The registry information containing all applications.
      */
@@ -50,6 +54,8 @@ public interface EurekaClient extends LookupService {
 
     /**
      * Gets the list of instances matching the given VIP Address.
+     *
+     * 获取指定VIP地址的实例列表。
      *
      * @param vipAddress The VIP address to match the instances for.
      * @param secure true if it is a secure vip address, false otherwise
@@ -59,6 +65,8 @@ public interface EurekaClient extends LookupService {
 
     /**
      * Gets the list of instances matching the given VIP Address in the passed region.
+     *
+     * 获取指定VIP地址和区域的实例信息列表
      *
      * @param vipAddress The VIP address to match the instances for.
      * @param secure true if it is a secure vip address, false otherwise
@@ -74,6 +82,8 @@ public interface EurekaClient extends LookupService {
      * application name if both of them are not null. If one of them is null,
      * then that criterion is completely ignored for matching instances.
      *
+     * 获取指定VIP地址和appName的实例信息列表
+     *
      * @param vipAddress The VIP address to match the instances for.
      * @param appName The applicationName to match the instances for.
      * @param secure true if it is a secure vip address, false otherwise.
@@ -86,11 +96,15 @@ public interface EurekaClient extends LookupService {
     // ==========================
 
     /**
+     * 获取所有已知的区域
+     *
      * @return in String form all regions (local + remote) that can be accessed by this client
      */
     public Set<String> getAllKnownRegions();
 
     /**
+     * 获取实例的状态
+     *
      * @return the current self instance status as seen on the Eureka server.
      */
     public InstanceInfo.InstanceStatus getInstanceRemoteStatus();
@@ -154,6 +168,8 @@ public interface EurekaClient extends LookupService {
     /**
      * Register {@link HealthCheckHandler} with the eureka client.
      *
+     * Eureka-Client注册健康检查
+     *
      * Once registered, the eureka client will first make an onDemand update of the
      * registering instanceInfo by calling the newly registered healthcheck handler,
      * and subsequently invoke the {@link HealthCheckHandler} in intervals specified
@@ -165,6 +181,8 @@ public interface EurekaClient extends LookupService {
 
     /**
      * Register {@link EurekaEventListener} with the eureka client.
+     *
+     * Eureka-Client注册事件监听
      *
      * Once registered, the eureka client will invoke {@link EurekaEventListener#onEvent} 
      * whenever there is a change in eureka client's internal state.  Use this instead of 
@@ -180,13 +198,17 @@ public interface EurekaClient extends LookupService {
     /**
      * Unregister a {@link EurekaEventListener} previous registered with {@link EurekaClient#registerEventListener}
      * or injected into the constructor of {@link DiscoveryClient}
-     * 
+     *
+     * Eureka-Client取消事件监听注册
+     *
      * @param eventListener
      * @return True if removed otherwise false if the listener was never registered.
      */
     public boolean unregisterEventListener(EurekaEventListener eventListener);
     
     /**
+     * 获取健康监测处理器
+     *
      * @return the current registered healthcheck handler
      */
     public HealthCheckHandler getHealthCheckHandler();
@@ -196,16 +218,22 @@ public interface EurekaClient extends LookupService {
     // =============
 
     /**
+     * 关闭Eureka-Client
+     *
      * Shuts down Eureka Client. Also sends a deregistration request to the eureka server.
      */
     public void shutdown();
     
     /**
+     * 获取Eureka-Client配置
+     *
      * @return the configuration of this eureka client
      */
     public EurekaClientConfig getEurekaClientConfig();
     
     /**
+     * 获取应用信息管理器
+     *
      * @return the application info manager of this eureka client
      */
     public ApplicationInfoManager getApplicationInfoManager();

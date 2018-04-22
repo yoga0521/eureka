@@ -32,6 +32,8 @@ public interface LookupService<T> {
      * Returns the corresponding {@link Application} object which is basically a
      * container of all registered <code>appName</code> {@link InstanceInfo}s.
      *
+     * 根据appName获取application
+     *
      * @param appName
      * @return a {@link Application} or null if we couldn't locate any app of
      *         the requested appName
@@ -42,6 +44,8 @@ public interface LookupService<T> {
      * Returns the {@link Applications} object which is basically a container of
      * all currently registered {@link Application}s.
      *
+     * 获取注册application的应用集合
+     *
      * @return {@link Applications}
      */
     Applications getApplications();
@@ -50,6 +54,8 @@ public interface LookupService<T> {
      * Returns the {@link List} of {@link InstanceInfo}s matching the the passed
      * in id. A single {@link InstanceInfo} can possibly be registered w/ more
      * than one {@link Application}s
+     *
+     * 从注册的应用集合中，根据instanceid获取实例信息
      *
      * @param id
      * @return {@link List} of {@link InstanceInfo}s or
@@ -72,6 +78,8 @@ public interface LookupService<T> {
      * that are returned may not be unreachable, it is solely up to the client
      * at that point to timeout quickly and retry the next server.
      * </p>
+     *
+     * 获取下一个服务器以处理来自eureka收到的注册表信息的请求
      *
      * @param virtualHostname
      *            the virtual host name that is associated to the servers.
