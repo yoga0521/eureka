@@ -247,6 +247,8 @@ public interface EurekaServerConfig {
      * Gets the total number of <em>HTTP</em> connections allowed to a
      * particular peer eureka node for replication.
      *
+     * 单个eureka节点的请求连接总数（进行复制信息操作）
+     *
      * @return total number of allowed <em>HTTP</em> connections for a peer
      *         node.
      */
@@ -256,6 +258,8 @@ public interface EurekaServerConfig {
      * Gets the idle time after which the <em>HTTP</em> connection should be
      * cleaned up.
      *
+     * 获取Eureka-Server请求空闲时间，单位为毫秒
+     *
      * @return idle time in seconds.
      */
     int getPeerNodeConnectionIdleTimeoutSeconds();
@@ -263,6 +267,8 @@ public interface EurekaServerConfig {
     /**
      * Get the time for which the delta information should be cached for the
      * clients to retrieve the value without missing it.
+     *
+     * 获取增量信息缓存的时间，以避免客户端检索的时候丢失，单位为毫秒
      *
      * @return time in milliseconds
      */
@@ -272,6 +278,8 @@ public interface EurekaServerConfig {
      * Get the time interval with which the clean up task should wake up and
      * check for expired delta information.
      *
+     * 获取清理任务应唤醒的时间间隔，并检查过期的增量信息，单位为毫秒
+     *
      * @return time in milliseconds.
      */
     long getDeltaRetentionTimerIntervalInMs();
@@ -279,6 +287,8 @@ public interface EurekaServerConfig {
     /**
      * Get the time interval with which the task that expires instances should
      * wake up and run.
+     *
+     * 租约过期定时任务执行频率，单位为毫秒。
      *
      * @return time in milliseconds.
      */
@@ -288,6 +298,8 @@ public interface EurekaServerConfig {
      * Get the timeout value for querying the <em>AWS</em> for <em>ASG</em>
      * information.
      *
+     * AWS相关
+     *
      * @return timeout value in milliseconds.
      */
     int getASGQueryTimeoutMs();
@@ -296,12 +308,16 @@ public interface EurekaServerConfig {
      * Get the time interval with which the <em>ASG</em> information must be
      * queried from <em>AWS</em>.
      *
+     * AWS相关
+     *
      * @return time in milliseconds.
      */
     long getASGUpdateIntervalMs();
 
     /**
      * Get the expiration value for the cached <em>ASG</em> information
+     *
+     * AWS相关
      *
      * @return time in milliseconds.
      */
@@ -311,6 +327,8 @@ public interface EurekaServerConfig {
      * Gets the time for which the registry payload should be kept in the cache
      * if it is not invalidated by change events.
      *
+     * 当注册表信息被改变时，则其被保存在缓存中过期时间，单位为秒，默认值为180s。
+     *
      * @return time in seconds.
      */
     long getResponseCacheAutoExpirationInSeconds();
@@ -318,6 +336,9 @@ public interface EurekaServerConfig {
     /**
      * Gets the time interval with which the payload cache of the client should
      * be updated.
+     *
+     * 只读缓存更新频率，单位为毫秒。
+     * 只读缓存定时更新任务只更新读取过请求，因此虽然永不过期，也会存在读取不到的情况。
      *
      * @return time in milliseconds.
      */
