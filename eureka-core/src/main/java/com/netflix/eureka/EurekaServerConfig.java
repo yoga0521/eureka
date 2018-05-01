@@ -117,7 +117,7 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
-     * 是否开启自我保护模式
+     * 是否开启自我保护模式。默认为true
      *
      * @return true to enable self preservation, false otherwise.
      */
@@ -144,7 +144,7 @@ public interface EurekaServerConfig {
      * The interval with which the threshold as specified in
      * {@link #getRenewalPercentThreshold()} needs to be updated.
      *
-     * 自我保护阈值更新的时间间隔，单位为毫秒（ms）
+     * 自我保护阈值更新的时间间隔，单位为毫秒（ms）。默认为 15*60*1000 ms
      *
      * @return time in milliseconds indicating the interval.
      */
@@ -159,7 +159,7 @@ public interface EurekaServerConfig {
      * <em>The changes are effective at runtime.</em>
      * </p>
      *
-     * eureka集群节点更新时间间隔，单位为毫秒（ms）
+     * eureka集群节点更新时间间隔，单位为毫秒（ms）。默认为 10*60*1000 ms
      *
      * @return timer in milliseconds indicating the interval.
      */
@@ -169,7 +169,7 @@ public interface EurekaServerConfig {
      * If set to true, the replicated data send in the request will be always compressed.
      * This does not define response path, which is driven by "Accept-Encoding" header.
      *
-     * 是否开启eureka集群之间复制信息请求压缩
+     * 是否开启eureka集群之间复制信息请求压缩。默认为false
      */
     boolean shouldEnableReplicatedRequestCompression();
 
@@ -207,7 +207,7 @@ public interface EurekaServerConfig {
      * clients start to send heartbeats and the server requests the clients for
      * registration information.
      *
-     * 如果eureka在启动的时候，获取不到注册信息，就等待。单位为毫秒（ms）
+     * 如果eureka在启动的时候，获取不到注册信息，就等待。单位为毫秒（ms）。默认为 1000*60*5 ms
      *
      * @return time in milliseconds.
      */
@@ -217,7 +217,7 @@ public interface EurekaServerConfig {
      * Gets the timeout value for connecting to peer eureka nodes for
      * replication.
      *
-     * eureka集群节点之间请求连接超时的时间（进行复制信息操作），单位为毫秒（ms）
+     * eureka集群节点之间请求连接超时的时间（进行复制信息操作），单位为毫秒（ms）。默认为 1000 ms
      *
      * @return timeout value in milliseconds.
      */
@@ -227,7 +227,7 @@ public interface EurekaServerConfig {
      * Gets the timeout value for reading information from peer eureka nodes for
      * replication.
      *
-     * eureka集群节点之间请求读取超时的时间（进行复制信息操作），单位为毫秒（ms）
+     * eureka集群节点之间请求读取超时的时间（进行复制信息操作），单位为毫秒（ms），默认为 5000 ms
      *
      * @return timeout value in milliseconds.
      */
@@ -237,7 +237,7 @@ public interface EurekaServerConfig {
      * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
      * nodes for replication.
      *
-     * eureka集群节点之间请求的连接总数（进行复制信息操作）
+     * eureka集群节点之间请求的连接总数（进行复制信息操作），默认为1000
      *
      * @return total number of allowed <em>HTTP</em> connections.
      */
@@ -247,7 +247,7 @@ public interface EurekaServerConfig {
      * Gets the total number of <em>HTTP</em> connections allowed to a
      * particular peer eureka node for replication.
      *
-     * 单个eureka节点的请求连接总数（进行复制信息操作）
+     * 单个eureka节点的请求连接总数（进行复制信息操作）。默认为500
      *
      * @return total number of allowed <em>HTTP</em> connections for a peer
      *         node.
@@ -258,7 +258,7 @@ public interface EurekaServerConfig {
      * Gets the idle time after which the <em>HTTP</em> connection should be
      * cleaned up.
      *
-     * 获取Eureka-Server请求空闲时间，单位为毫秒
+     * 获取Eureka-Server请求空闲时间，单位为毫秒，默认为 30 ms
      *
      * @return idle time in seconds.
      */
@@ -268,7 +268,7 @@ public interface EurekaServerConfig {
      * Get the time for which the delta information should be cached for the
      * clients to retrieve the value without missing it.
      *
-     * 获取增量信息缓存的时间，以避免客户端检索的时候丢失，单位为毫秒
+     * 获取增量信息缓存的时间，以避免客户端检索的时候丢失，单位为毫秒。默认为 30*60*1000 ms
      *
      * @return time in milliseconds
      */
@@ -278,7 +278,7 @@ public interface EurekaServerConfig {
      * Get the time interval with which the clean up task should wake up and
      * check for expired delta information.
      *
-     * 获取清理任务应唤醒的时间间隔，并检查过期的增量信息，单位为毫秒
+     * 获取清理任务应唤醒的时间间隔，并检查过期的增量信息，单位为毫秒。默认为 30*1000 ms
      *
      * @return time in milliseconds.
      */
@@ -288,7 +288,7 @@ public interface EurekaServerConfig {
      * Get the time interval with which the task that expires instances should
      * wake up and run.
      *
-     * 租约过期定时任务执行频率，单位为毫秒。
+     * 租约过期定时任务执行频率，单位为毫秒。默认为 60*1000 ms
      *
      * @return time in milliseconds.
      */
@@ -337,7 +337,7 @@ public interface EurekaServerConfig {
      * Gets the time interval with which the payload cache of the client should
      * be updated.
      *
-     * 只读缓存更新频率，单位为毫秒。
+     * 只读缓存更新频率，单位为毫秒。默认为 30*1000 ms
      * 只读缓存定时更新任务只更新读取过请求，因此虽然永不过期，也会存在读取不到的情况。
      *
      * @return time in milliseconds.
