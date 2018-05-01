@@ -45,7 +45,9 @@ public interface EurekaInstanceConfig {
     /**
      * Get the unique Id (within the scope of the appName) of this instance to be registered with eureka.
      *
-     * 获取在同一应用名下保证唯一的实例id。默认为null
+     * 获取在同一应用名下保证唯一的实例id，
+     * 生成方式${spring.application.name}:${spring.application.instance_id:${random.value}}。
+     * 默认为null
      *
      * @return the (appname scoped) unique id for this instance
      */
@@ -63,7 +65,7 @@ public interface EurekaInstanceConfig {
     /**
      * Get the name of the application group to be registered with eureka.
      *
-     * 获取应用分组名
+     * 获取应用分组名。默认为"unknown"
      *
      * @return string denoting the name.
      */
@@ -76,7 +78,7 @@ public interface EurekaInstanceConfig {
      *
      * :( public API typos are the worst. I think this was meant to be "OnInit".
      *
-     * 是否注册就开启通信
+     * 是否注册就开启通信。默认为false
      *
      * @return true to immediately start taking traffic, false otherwise.
      */
@@ -86,7 +88,7 @@ public interface EurekaInstanceConfig {
      * Get the <code>non-secure</code> port on which the instance should receive
      * traffic.
      *
-     * 获取http端口
+     * 获取http端口。默认为80端口
      *
      * @return the non-secure port on which the instance should receive traffic.
      */
@@ -96,7 +98,7 @@ public interface EurekaInstanceConfig {
      * Get the <code>Secure port</code> on which the instance should receive
      * traffic.
      *
-     * 获取https端口
+     * 获取https端口。默认为443端口
      *
      * @return the secure port on which the instance should receive traffic.
      */
@@ -106,7 +108,7 @@ public interface EurekaInstanceConfig {
      * Indicates whether the <code>non-secure</code> port should be enabled for
      * traffic or not.
      *
-     * http端口是否开启
+     * http端口是否开启。默认为true
      *
      * @return true if the <code>non-secure</code> port is enabled, false
      *         otherwise.
@@ -117,7 +119,7 @@ public interface EurekaInstanceConfig {
      * Indicates whether the <code>secure</code> port should be enabled for
      * traffic or not.
      *
-     * https端口是否开启
+     * https端口是否开启。默认为false
      *
      * @return true if the <code>secure</code> port is enabled, false otherwise.
      */
@@ -136,7 +138,7 @@ public interface EurekaInstanceConfig {
      * {@link HealthCheckCallback} and then decides to make itself unavailable.
      * </p>
      *
-     * 租约续约时间间隔，单位为秒
+     * 租约续约时间间隔，单位为秒。默认为30s
      *
      * @return time in seconds
      */
@@ -156,7 +158,7 @@ public interface EurekaInstanceConfig {
      * .
      * </p>
      *
-     * 租约过期时间，单位为秒
+     * 租约过期时间，单位为秒。默认为90s
      *
      * @return value indicating time in seconds.
      */
@@ -172,7 +174,7 @@ public interface EurekaInstanceConfig {
      * this instance.
      * </p>
      *
-     * 获取实例的虚拟主机名
+     * 获取实例的虚拟主机名，主机名:80
      *
      * @return the string indicating the virtual host name which the clients use
      *         to call this service.
@@ -189,7 +191,7 @@ public interface EurekaInstanceConfig {
      * this instance.
      * </p>
      *
-     * 获取实例的安全虚拟主机名
+     * 获取实例的安全虚拟主机名，主机名:443
      *
      * @return the string indicating the secure virtual host name which the
      *         clients use to call this service.
@@ -237,7 +239,7 @@ public interface EurekaInstanceConfig {
      * used to get some AWS specific instance information if the instance is
      * deployed in AWS.
      *
-     * AWS相关，跳过
+     * 获取实例部署的数据中心信息
      *
      * @return information that indicates which data center this instance is
      *         deployed in.
@@ -268,7 +270,7 @@ public interface EurekaInstanceConfig {
      * <code>HTML</code> indicating what is the current status of the instance.
      * </p>
      *
-     * 获取状态页面的相对地址
+     * 获取状态页面的相对地址。默认为"/Status"
      *
      * @return - relative <code>URL</code> that specifies the status page.
      */
@@ -290,7 +292,7 @@ public interface EurekaInstanceConfig {
      * replaced at runtime.
      * </p>
      *
-     * 获取状态页面的绝对地址
+     * 获取状态页面的绝对地址。默认为null
      *
      * @return absolute status page URL of this instance.
      */
@@ -308,7 +310,7 @@ public interface EurekaInstanceConfig {
      * it as a landing page.
      * </p>
      *
-     * 获取主页的相对地址
+     * 获取主页的相对地址。默认为"/"
      *
      * @return relative <code>URL</code> that specifies the home page.
      */
@@ -328,7 +330,7 @@ public interface EurekaInstanceConfig {
      * replaced at runtime.
      * </p>
      *
-     * 获取主页的绝对地址
+     * 获取主页的绝对地址。默认为null
      *
      * @return absolute home page URL of this instance.
      */
@@ -348,7 +350,7 @@ public interface EurekaInstanceConfig {
      * causing further damage.
      * </p>
      *
-     * 获取健康检查的相对地址
+     * 获取健康检查的相对地址。默认为"/healthcheck"
      *
      * @return - relative <code>URL</code> that specifies the health check page.
      */
@@ -371,7 +373,7 @@ public interface EurekaInstanceConfig {
      * replaced at runtime.
      * </p>
      *
-     * 获取健康检查的绝对地址
+     * 获取健康检查的绝对地址。默认为null
      *
      * @return absolute health check page URL of this instance.
      */
@@ -394,7 +396,7 @@ public interface EurekaInstanceConfig {
      * replaced at runtime.
      * </p>
      *
-     * 获取健康检查的安全的绝对地址
+     * 获取健康检查的安全的绝对地址。默认为null
      *
      * @return absolute health check page URL of this instance.
      */
@@ -420,7 +422,7 @@ public interface EurekaInstanceConfig {
     /**
      * Get the namespace used to find properties.
      *
-     * 获取命名空间，配置属性
+     * 获取命名空间，配置属性。默认为eureka
      *
      * @return the namespace used to find properties.
      */
