@@ -87,8 +87,8 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
     /**
      * 含有命名空间和数据中心的有参构造函数
      *
-     * @param namespace
-     * @param info
+     * @param namespace 命名空间
+     * @param info      数据中心
      */
     public PropertiesInstanceConfig(String namespace, DataCenterInfo info) {
         //调用父类的构造函数设置数据中心
