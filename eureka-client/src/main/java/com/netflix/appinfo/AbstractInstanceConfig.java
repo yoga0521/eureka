@@ -41,15 +41,42 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE;
-    
+
+    /**
+     * 租约过期时间，单位为秒
+     */
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
+    /**
+     * 租约续约时间间隔，单位为秒
+     */
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
+    /**
+     * https端口默认关闭
+     */
     private static final boolean SECURE_PORT_ENABLED = false;
+    /**
+     * http端口默认开启
+     */
     private static final boolean NON_SECURE_PORT_ENABLED = true;
+    /**
+     * http端口，80
+     */
     private static final int NON_SECURE_PORT = 80;
+    /**
+     * https端口，443
+     */
     private static final int SECURE_PORT = 443;
+    /**
+     * 应用初始化的时候默认不开启
+     */
     private static final boolean INSTANCE_ENABLED_ON_INIT = false;
+    /**
+     * 获取主机信息，key：主机IP，value：主机名
+     */
     private static final Pair<String, String> hostInfo = getHostInfo();
+    /**
+     * 数据中心
+     */
     private DataCenterInfo info = new DataCenterInfo() {
         @Override
         public Name getName() {
@@ -61,6 +88,9 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
 
     }
 
+    /**
+     * 设置数据中心
+     */
     protected AbstractInstanceConfig(DataCenterInfo info) {
         this.info = info;
     }
@@ -211,6 +241,11 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return hostInfo.first();
     }
 
+    /**
+     * 获取主机信息，key为主机地址，value为主机名
+     *
+     * @return Pair<String, String>
+     */
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair;
         try {
