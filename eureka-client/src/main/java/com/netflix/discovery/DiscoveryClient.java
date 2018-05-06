@@ -136,8 +136,8 @@ public class DiscoveryClient implements EurekaClient {
     // instance variables
     /**
      * 线程池，目前就两个任务：
-     * 更新service urls
-     * 调度一个定时任务
+     * 1.更新service urls
+     * 2.调度一个定时任务
      *
      * A scheduler to be used for the following 3 tasks:
      * - updating service urls
@@ -218,7 +218,7 @@ public class DiscoveryClient implements EurekaClient {
      */
     private volatile HealthCheckHandler healthCheckHandler;
     /**
-     * 远程区域的application列表，key: todo
+     * 远程区域的application列表，key: 应用实例区域，value：应用集合
      */
     private volatile Map<String, Applications> remoteRegionVsApps = new ConcurrentHashMap<>();
     /**

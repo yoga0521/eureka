@@ -46,7 +46,7 @@ public interface EurekaClient extends LookupService {
     /**
      * Get all applications registered with a specific eureka service.
      *
-     * 获取指定的Eureka服务中注册的应用集合
+     * 获取指定的Eureka服务地址中注册的应用集合
      *
      * @param serviceUrl The string representation of the service url.
      * @return The registry information containing all applications.
