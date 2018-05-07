@@ -66,25 +66,59 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final Logger logger = LoggerFactory
             .getLogger(DefaultEurekaServerConfig.class);
+    /**
+     * 创建动态属性实例的工厂
+     */
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
             .getInstance();
+    /**
+     * Eureka-Server的属性配置文件
+     */
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
             .getInstance().getStringProperty("eureka.server.props",
                     "eureka-server");
+    /**
+     * 等待复制时间
+     */
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
 
+    /**
+     * 命名空间
+     */
     private String namespace = "eureka.";
 
     // These counters are checked for each HTTP request. Instantiating them per request like for the other
     // properties would be too costly.
+    //限流相关属性
+    /**
+     * 标准客户端名集合
+     */
     private final DynamicStringSetProperty rateLimiterPrivilegedClients =
             new DynamicStringSetProperty(namespace + "rateLimiter.privilegedClients", Collections.<String>emptySet());
+    /**
+     * 是否开启请求限流
+     */
     private final DynamicBooleanProperty rateLimiterEnabled = configInstance.getBooleanProperty(namespace + "rateLimiter.enabled", false);
+    /**
+     * 是否限制非标准客户端的访问
+     */
     private final DynamicBooleanProperty rateLimiterThrottleStandardClients = configInstance.getBooleanProperty(namespace + "rateLimiter.throttleStandardClients", false);
+    /**
+     * 速率限制的burst size
+     */
     private final DynamicIntProperty rateLimiterBurstSize = configInstance.getIntProperty(namespace + "rateLimiter.burstSize", 10);
+    /**
+     * 指定增量获取注册信息的平均执行注册请求速率
+     */
     private final DynamicIntProperty rateLimiterRegistryFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.registryFetchAverageRate", 500);
+    /**
+     * 指定全量获取注册信息的平均执行注册请求速率
+     */
     private final DynamicIntProperty rateLimiterFullFetchAverageRate = configInstance.getIntProperty(namespace + "rateLimiter.fullFetchAverageRate", 100);
 
+    /**
+     * AWS相关
+     */
     private final DynamicStringProperty listAutoScalingGroupsRoleName =
             configInstance.getStringProperty(namespace + "listAutoScalingGroupsRoleName", "ListAutoScalingGroups");
 
@@ -190,6 +224,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      * (non-Javadoc)
      *
      * @see com.netflix.eureka.EurekaServerConfig#shouldEnableSelfPreservation()
+     */
+    /**
+     * 举例一个方法，是否开启自我保护模式，并传一个默认值（这里是true）
      */
     @Override
     public boolean shouldEnableSelfPreservation() {
