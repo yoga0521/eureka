@@ -268,7 +268,7 @@ public interface EurekaServerConfig {
      * Get the time for which the delta information should be cached for the
      * clients to retrieve the value without missing it.
      *
-     * 获取清理过期的增量信息任务应唤醒的时间间隔，单位为毫秒。默认为 30*60*1000 ms
+     * 获取增量信息缓存的时间，以避免客户端检索的时候丢失，单位为毫秒。默认为 30*60*1000 ms
      *
      * @return time in milliseconds
      */
@@ -278,7 +278,7 @@ public interface EurekaServerConfig {
      * Get the time interval with which the clean up task should wake up and
      * check for expired delta information.
      *
-     * 获取清理任务应唤醒的时间间隔，并检查过期的增量信息，单位为毫秒。默认为 30*1000 ms
+     * 获取清理过期的增量信息任务应唤醒的时间间隔，单位为毫秒。默认为 30*1000 ms
      *
      * @return time in milliseconds.
      */
