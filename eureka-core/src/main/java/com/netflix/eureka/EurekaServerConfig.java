@@ -711,7 +711,8 @@ public interface EurekaServerConfig {
      * Indicate if rate limit standard clients. If set to false, only non standard clients
      * will be rate limited.
      *
-     * 是否限制非标准客户端的访问，默认为false
+     * 是否限制非标准客户端的访问，默认为false。
+     * 标准客户端通过请求头的 "DiscoveryIdentity-Name" 来判断，是否在标准客户端名集合里。
      *
      */
     boolean isRateLimiterThrottleStandardClients();
@@ -719,7 +720,7 @@ public interface EurekaServerConfig {
     /**
      * A list of certified clients. This is in addition to standard eureka Java clients.
      *
-     * 标准客户端名集合
+     * 获取标准客户端名集合
      *
      * 标准客户端名集合。默认包含"DefaultClient" 和 "DefaultServer" 。
      */
