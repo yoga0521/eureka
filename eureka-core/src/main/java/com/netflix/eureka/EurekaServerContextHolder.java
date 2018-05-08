@@ -23,22 +23,43 @@ package com.netflix.eureka;
  */
 public class EurekaServerContextHolder {
 
+    /**
+     * Eureka-Server上下文
+     */
     private final EurekaServerContext serverContext;
 
     private EurekaServerContextHolder(EurekaServerContext serverContext) {
         this.serverContext = serverContext;
     }
 
+    /**
+     * 获取Eureka-Server上下文
+     *
+     * @return Eureka-Server上下文
+     */
     public EurekaServerContext getServerContext() {
         return this.serverContext;
     }
 
+    /**
+     * Eureka-Server上下文持有者
+     */
     private static EurekaServerContextHolder holder;
 
+    /**
+     * 初始化
+     *
+     * @param serverContext Eureka-Server上下文
+     */
     public static synchronized void initialize(EurekaServerContext serverContext) {
         holder = new EurekaServerContextHolder(serverContext);
     }
 
+    /**
+     * 获取Eureka-Server上下文持有者
+     *
+     * @return Eureka-Server上下文持有者
+     */
     public static EurekaServerContextHolder getInstance() {
         return holder;
     }

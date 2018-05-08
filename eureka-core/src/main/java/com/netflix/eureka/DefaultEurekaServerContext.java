@@ -38,18 +38,33 @@ import javax.inject.Singleton;
 public class DefaultEurekaServerContext implements EurekaServerContext {
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaServerContext.class);
 
+    /**
+     * Eureka-Server配置对象
+     */
     private final EurekaServerConfig serverConfig;
+    /**
+     * 编解码器
+     */
     private final ServerCodecs serverCodecs;
+    /**
+     * 应用实例信息注册表
+     */
     private final PeerAwareInstanceRegistry registry;
+    /**
+     * Eureka-Server集群节点集合
+     */
     private final PeerEurekaNodes peerEurekaNodes;
+    /**
+     * 应用信息管理器
+     */
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject
     public DefaultEurekaServerContext(EurekaServerConfig serverConfig,
-                               ServerCodecs serverCodecs,
-                               PeerAwareInstanceRegistry registry,
-                               PeerEurekaNodes peerEurekaNodes,
-                               ApplicationInfoManager applicationInfoManager) {
+                                      ServerCodecs serverCodecs,
+                                      PeerAwareInstanceRegistry registry,
+                                      PeerEurekaNodes peerEurekaNodes,
+                                      ApplicationInfoManager applicationInfoManager) {
         this.serverConfig = serverConfig;
         this.serverCodecs = serverCodecs;
         this.registry = registry;
@@ -61,7 +76,9 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     @Override
     public void initialize() throws Exception {
         logger.info("Initializing ...");
+        // 启动Eureka-Server集群节点集合
         peerEurekaNodes.start();
+        // 初始化应用实例信息注册表
         registry.init(peerEurekaNodes);
         logger.info("Initialized");
     }
@@ -70,7 +87,9 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     @Override
     public void shutdown() throws Exception {
         logger.info("Shutting down ...");
+        // 关闭应用实例信息注册表
         registry.shutdown();
+        // 关闭Eureka-Server集群节点集合
         peerEurekaNodes.shutdown();
         logger.info("Shut down");
     }
