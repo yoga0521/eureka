@@ -596,7 +596,7 @@ public interface EurekaClientConfig {
      * {@link com.netflix.appinfo.ApplicationInfoManager#setInstanceStatus(com.netflix.appinfo.InstanceInfo.InstanceStatus)}
      * will trigger on-demand (but rate limited) register/updates to remote eureka servers
      *
-     * 是否将实例状态同步到Eureka-Server，速率受限。默认为true
+     * 是否按需将实例状态同步到Eureka-Server，速率受限。默认为true
      *
      * @return true or false for whether local status updates should be updated to remote servers on-demand
      */

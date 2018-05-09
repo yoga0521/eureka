@@ -28,16 +28,43 @@ import java.util.concurrent.atomic.AtomicReference;
 class InstanceInfoReplicator implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
 
+    /**
+     * Eureka-Client
+     */
     private final DiscoveryClient discoveryClient;
+    /**
+     * 应用实例信息
+     */
     private final InstanceInfo instanceInfo;
 
+    /**
+     * 复制时间间隔，单位为秒
+     */
     private final int replicationIntervalSeconds;
+    /**
+     * 定时执行器
+     */
     private final ScheduledExecutorService scheduler;
+    /**
+     * 定时执行任务Future
+     */
     private final AtomicReference<Future> scheduledPeriodicRef;
 
+    /**
+     * 是否开启调度
+     */
     private final AtomicBoolean started;
+    /**
+     * 基于令牌桶的限流
+     */
     private final RateLimiter rateLimiter;
+    /**
+     * 速率限制的burst size
+     */
     private final int burstSize;
+    /**
+     * 允许的每分钟限流频率
+     */
     private final int allowedRatePerMinute;
 
     InstanceInfoReplicator(DiscoveryClient discoveryClient, InstanceInfo instanceInfo, int replicationIntervalSeconds, int burstSize) {
@@ -62,8 +89,12 @@ class InstanceInfoReplicator implements Runnable {
 
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
+            // 设置标志，表明应用实例信息在Eureka-Client和Eureka-Server数据不一致
+            // InstanceInfo刚被创建时，在Eureka-Server不存在，也会被注册
             instanceInfo.setIsDirty();  // for initial register
+            // 提交任务
             Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
+            // 设置Future
             scheduledPeriodicRef.set(next);
         }
     }
@@ -91,13 +122,15 @@ class InstanceInfoReplicator implements Runnable {
                     @Override
                     public void run() {
                         logger.debug("Executing on-demand update of local InstanceInfo");
-    
+
+                        // 取消之前任务，避免无用的注册
                         Future latestPeriodic = scheduledPeriodicRef.get();
                         if (latestPeriodic != null && !latestPeriodic.isDone()) {
                             logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
                             latestPeriodic.cancel(false);
                         }
-    
+
+                        // 再次调用，发起注册
                         InstanceInfoReplicator.this.run();
                     }
                 });

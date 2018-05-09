@@ -226,7 +226,7 @@ public class ApplicationInfoManager {
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
      *
-     *
+     *  刷新数据中心信息
      *
      * see {@link InstanceInfo#getHostName()} for explanation on why the hostname is used as the default address
      */

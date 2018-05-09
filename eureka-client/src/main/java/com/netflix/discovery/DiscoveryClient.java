@@ -589,7 +589,7 @@ public class DiscoveryClient implements EurekaClient {
     private void scheduleServerEndpointTask(EurekaTransport eurekaTransport,
                                             AbstractDiscoveryClientOptionalArgs args) {
 
-            
+
         Collection<?> additionalFilters = args == null
                 ? Collections.emptyList()
                 : args.additionalFilters;
@@ -597,18 +597,18 @@ public class DiscoveryClient implements EurekaClient {
         EurekaJerseyClient providedJerseyClient = args == null
                 ? null
                 : args.eurekaJerseyClient;
-        
+
         TransportClientFactories argsTransportClientFactories = null;
         if (args != null && args.getTransportClientFactories() != null) {
             argsTransportClientFactories = args.getTransportClientFactories();
         }
-        
+
         // Ignore the raw types warnings since the client filter interface changed between jersey 1/2
         @SuppressWarnings("rawtypes")
         TransportClientFactories transportClientFactories = argsTransportClientFactories == null
                 ? new Jersey1TransportClientFactories()
                 : argsTransportClientFactories;
-                
+
         Optional<SSLContext> sslContext = args == null
                 ? Optional.empty()
                 : args.getSSLContext();
@@ -688,7 +688,7 @@ public class DiscoveryClient implements EurekaClient {
     public EurekaClientConfig getEurekaClientConfig() {
         return clientConfig;
     }
-    
+
     @Override
     public ApplicationInfoManager getApplicationInfoManager() {
         return applicationInfoManager;
@@ -1389,8 +1389,11 @@ public class DiscoveryClient implements EurekaClient {
         // 从 Eureka-Server 拉取注册信息执行器
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer
+            // 获取注册信息的时间间隔，默认为30s
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+            // 获取注册信息缓存刷新失败后延迟重试时间的最大倍数，默认为10
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
+            // 注册信息缓存刷新定时器
             scheduler.schedule(
                     new TimedSupervisorTask(
                             "cacheRefresh",
@@ -1406,11 +1409,14 @@ public class DiscoveryClient implements EurekaClient {
 
         // 向 Eureka-Server 心跳（续租）执行器
         if (clientConfig.shouldRegisterWithEureka()) {
+            // 续租时间间隔，默认为30s
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
+            // 心跳检测执行超时后延迟重试时间的最大倍数，默认为10
             int expBackOffBound = clientConfig.getHeartbeatExecutorExponentialBackOffBound();
             logger.info("Starting heartbeat executor: " + "renew interval is: {}", renewalIntervalInSecs);
 
             // Heartbeat timer
+            // 心跳定时器
             scheduler.schedule(
                     new TimedSupervisorTask(
                             "heartbeat",
@@ -1424,18 +1430,22 @@ public class DiscoveryClient implements EurekaClient {
                     renewalIntervalInSecs, TimeUnit.SECONDS);
 
             // InstanceInfo replicator
+            // 创建应用实例信息复制器
             instanceInfoReplicator = new InstanceInfoReplicator(
                     this,
                     instanceInfo,
                     clientConfig.getInstanceInfoReplicationIntervalSeconds(),
                     2); // burstSize
 
+            // 创建应用实例状态变更监听器
             statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
+                // 获取监听器id
                 @Override
                 public String getId() {
                     return "statusChangeListener";
                 }
 
+                // 通知方法
                 @Override
                 public void notify(StatusChangeEvent statusChangeEvent) {
                     if (InstanceStatus.DOWN == statusChangeEvent.getStatus() ||
@@ -1445,14 +1455,18 @@ public class DiscoveryClient implements EurekaClient {
                     } else {
                         logger.info("Saw local status change event {}", statusChangeEvent);
                     }
+                    // 按需执行更新
                     instanceInfoReplicator.onDemandUpdate();
                 }
             };
 
+            // 是否按需将实例状态同步到Eureka-Server，速率受限。默认为true
             if (clientConfig.shouldOnDemandUpdateStatusChange()) {
+                // 注册应用实例状态变更监听器
                 applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
+            // 开启应用实例复制器
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
             logger.info("Not registering with Eureka server per configuration");
@@ -1519,13 +1533,18 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Refresh the current local instanceInfo. Note that after a valid refresh where changes are observed, the
      * isDirty flag on the instanceInfo is set to true
+     *
+     * 刷新当前的本地应用实例信息。, 在观察到更改的有效刷新后，应用实例信息的isDirty标志被设置为true
      */
     void refreshInstanceInfo() {
+        // 刷新数据中心信息
         applicationInfoManager.refreshDataCenterInfoIfRequired();
+        // 刷新租约信息
         applicationInfoManager.refreshLeaseInfoIfRequired();
 
         InstanceStatus status;
         try {
+            // 获取应用实例状态
             status = getHealthCheckHandler().getStatus(instanceInfo.getStatus());
         } catch (Exception e) {
             logger.warn("Exception from healthcheckHandler.getStatus, setting status to DOWN", e);
@@ -1533,6 +1552,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         if (null != status) {
+            // 设置应用信息管理器的应用状态
             applicationInfoManager.setInstanceStatus(status);
         }
     }
@@ -1638,9 +1658,9 @@ public class DiscoveryClient implements EurekaClient {
             }
         } catch (Throwable e) {
             logger.error("Cannot fetch registry from server", e);
-        }        
+        }
     }
-    
+
     /**
      * 从备份注册信息中获取注册信息（当所有的Eureka-Server urls都无法访问）
      *

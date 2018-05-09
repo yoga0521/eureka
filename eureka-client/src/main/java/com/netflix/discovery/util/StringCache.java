@@ -33,24 +33,33 @@ public class StringCache {
         if (str != null && (lengthLimit < 0 || str.length() <= lengthLimit)) {
             // Return value from cache if available
             try {
+                // 加读锁
                 lock.readLock().lock();
+                // 从缓存中获取
                 WeakReference<String> ref = cache.get(str);
+                // 如果存在就返回
                 if (ref != null) {
                     return ref.get();
                 }
             } finally {
+                // 解除读锁
                 lock.readLock().unlock();
             }
 
             // Update cache with new content
             try {
+                // 加写锁
                 lock.writeLock().lock();
+                // 从缓存中获取
                 WeakReference<String> ref = cache.get(str);
+                // 如果存在就反悔啊
                 if (ref != null) {
                     return ref.get();
                 }
+                // 没有就添加
                 cache.put(str, new WeakReference<>(str));
             } finally {
+                // 解除写锁
                 lock.writeLock().unlock();
             }
             return str;
