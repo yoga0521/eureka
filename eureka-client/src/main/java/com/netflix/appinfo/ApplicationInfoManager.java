@@ -264,6 +264,7 @@ public class ApplicationInfoManager {
         int currentLeaseDuration = config.getLeaseExpirationDurationInSeconds();
         //获取最新的租约续约时间间隔
         int currentLeaseRenewal = config.getLeaseRenewalIntervalInSeconds();
+        //租约过期时间不同或者租约续约时间间隔不同就出发注册
         if (leaseInfo.getDurationInSecs() != currentLeaseDuration || leaseInfo.getRenewalIntervalInSecs() != currentLeaseRenewal) {
             //创建最新的租约信息
             LeaseInfo newLeaseInfo = LeaseInfo.Builder.newBuilder()
