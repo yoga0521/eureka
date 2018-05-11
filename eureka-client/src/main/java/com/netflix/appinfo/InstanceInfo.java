@@ -931,14 +931,17 @@ public class InstanceInfo {
      */
     @JsonIgnore
     public String getId() {
+        // 如果instanceId不为空，就返回instanceId
         if (instanceId != null && !instanceId.isEmpty()) {
             return instanceId;
         } else if (dataCenterInfo instanceof UniqueIdentifier) {
+            // AWS相关，跳过
             String uniqueId = ((UniqueIdentifier) dataCenterInfo).getId();
             if (uniqueId != null && !uniqueId.isEmpty()) {
                 return uniqueId;
             }
         }
+        //返回主机名
         return hostName;
     }
 

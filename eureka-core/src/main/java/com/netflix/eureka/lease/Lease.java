@@ -38,12 +38,30 @@ public class Lease<T> {
 
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
+    /**
+     * 租约的实体，现在只有InstanceInfo使用
+     */
     private T holder;
+    /**
+     * 租约过期时间戳
+     */
     private long evictionTimestamp;
+    /**
+     * 注册时间戳，即租约创建时间
+     */
     private long registrationTimestamp;
+    /**
+     * 服务开启时间戳
+     */
     private long serviceUpTimestamp;
     // Make it volatile so that the expiration task would see this quicker
+    /**
+     * 最近更新时间戳
+     */
     private volatile long lastUpdateTimestamp;
+    /**
+     * 租约有效时间，单位为秒
+     */
     private long duration;
 
     public Lease(T r, int durationInSecs) {
@@ -66,6 +84,7 @@ public class Lease<T> {
 
     /**
      * Cancels the lease by updating the eviction time.
+     * 通过更新租约过期时间来取消租约。
      */
     public void cancel() {
         if (evictionTimestamp <= 0) {
@@ -76,6 +95,8 @@ public class Lease<T> {
     /**
      * Mark the service as up. This will only take affect the first time called,
      * subsequent calls will be ignored.
+     *
+     * 第一次调用时将服务标记为up。
      */
     public void serviceUp() {
         if (serviceUpTimestamp == 0) {
@@ -85,6 +106,8 @@ public class Lease<T> {
 
     /**
      * Set the leases service UP timestamp.
+     *
+     * 设置服务开启时间戳
      */
     public void setServiceUpTimestamp(long serviceUpTimestamp) {
         this.serviceUpTimestamp = serviceUpTimestamp;
@@ -150,6 +173,8 @@ public class Lease<T> {
 
     /**
      * Returns the holder of the lease.
+     *
+     * 获取租约实体
      */
     public T getHolder() {
         return holder;

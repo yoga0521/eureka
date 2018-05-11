@@ -163,6 +163,7 @@ public class ApplicationResource {
 
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
         DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
+        // AWS相关
         if (dataCenterInfo instanceof UniqueIdentifier) {
             String dataCenterInfoId = ((UniqueIdentifier) dataCenterInfo).getId();
             if (isBlank(dataCenterInfoId)) {
@@ -182,7 +183,9 @@ public class ApplicationResource {
             }
         }
 
+        // 调用PeerAwareInstanceRegistry的register方法，注册应用实例信息
         registry.register(info, "true".equals(isReplication));
+        // 返回204code，表示成功
         return Response.status(204).build();  // 204 to be backwards compatible
     }
 

@@ -75,6 +75,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceRegistry.class);
 
     private static final String[] EMPTY_STR_ARRAY = new String[0];
+    /**
+     * 注册信息保存在这个map中，第一层的key为appname，第二层的key为instance的id
+     */
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
@@ -186,37 +189,54 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     /**
      * Registers a new instance with a given duration.
      *
+     *  在一个给定的持续时间内，注册一个新的应用实例
+     *
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)
      */
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         try {
+            // 加读锁
             read.lock();
+            // 根据appName获取租约信息
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
+            // 添加注册信息到监控
             REGISTER.increment(isReplication);
+            // 如果不存在对应的注册信息
             if (gMap == null) {
+                // 创建一个新的租约信息map对象
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
+                // put一组k-v，如果k已存在，就不覆盖，已存在的对应的v，如果k不存在，就添加新的k-v，并返回null
                 gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
+                // 如果返回值为null，说明原来不存在对应appName的租约
                 if (gMap == null) {
+                    // 设置gMap为新的租约对象
                     gMap = gNewMap;
                 }
             }
+            // 根据id获取存在的租约
             Lease<InstanceInfo> existingLease = gMap.get(registrant.getId());
             // Retain the last dirty timestamp without overwriting it, if there is already a lease
+            // 如果租约信息和租约实体都不为空，即不是第一次注册
             if (existingLease != null && (existingLease.getHolder() != null)) {
+                // 获取Eureka-Server上注册的应用实例信息的最近的数据不一致时间戳
                 Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
+                // 获取Eureka-Client上应用实例信息的最近的数据不一致时间戳
                 Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
                 logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
 
                 // this is a > instead of a >= because if the timestamps are equal, we still take the remote transmitted
                 // InstanceInfo instead of the server local copy.
+                // 如果Eureka-Server上注册的应用实例信息的数据不一致时间大于Eureka-Client上的时间，就将
                 if (existingLastDirtyTimestamp > registrationLastDirtyTimestamp) {
                     logger.warn("There is an existing lease and the existing lease's dirty timestamp {} is greater" +
                             " than the one that is being registered {}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
                     logger.warn("Using the existing instanceInfo instead of the new instanceInfo as the registrant");
+                    // 设置需要注册的应用实例对象为Eureka-Server已注册过的应用实例对象
                     registrant = existingLease.getHolder();
                 }
             } else {
                 // The lease does not exist and hence it is a new registration
+                // 第一次注册应用实例信息
                 synchronized (lock) {
                     if (this.expectedNumberOfRenewsPerMin > 0) {
                         // Since the client wants to cancel it, reduce the threshold
@@ -229,17 +249,22 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
                 logger.debug("No previous lease information found; it is new registration");
             }
+            // 为应用实例信息创建一个新的租约
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
+            // 如果不是第一次注册，设置新租约的服务开启时间为之前租约中的服务开启时间
             if (existingLease != null) {
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
+            // 添加新的租约
             gMap.put(registrant.getId(), lease);
+            // 添加到最近注册的调试队列中
             synchronized (recentRegisteredQueue) {
                 recentRegisteredQueue.add(new Pair<Long, String>(
                         System.currentTimeMillis(),
                         registrant.getAppName() + "(" + registrant.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status happens
+            // 添加到应用实例覆盖状态映射（Eureka-Server 初始化使用）
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
                                 + "overrides", registrant.getOverriddenStatus(), registrant.getId());
