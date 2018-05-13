@@ -25,17 +25,44 @@ import org.slf4j.LoggerFactory;
 public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
+    /**
+     * 超时计数，配合netflix servo监控
+     */
     private final Counter timeoutCounter;
+    /**
+     * 拒绝计数，配合netflix servo监控
+     */
     private final Counter rejectedCounter;
+    /**
+     * 报错计数，配合netflix servo监控
+     */
     private final Counter throwableCounter;
     private final LongGauge threadPoolLevelGauge;
 
+    /**
+     * 定时任务服务，定时发起子任务
+     */
     private final ScheduledExecutorService scheduler;
+    /**
+     * 执行子线程任务线程池
+     */
     private final ThreadPoolExecutor executor;
+    /**
+     * 子任务超时时间
+     */
     private final long timeoutMillis;
+    /**
+     * 子任务
+     */
     private final Runnable task;
 
+    /**
+     * 执行频率
+     */
     private final AtomicLong delay;
+    /**
+     * 最大执行频率，子任务超时时使用
+     */
     private final long maxDelay;
 
     public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
@@ -59,15 +86,20 @@ public class TimedSupervisorTask extends TimerTask {
     public void run() {
         Future<?> future = null;
         try {
+            // 提交子任务
             future = executor.submit(task);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
+            // 阻塞获取任务的执行结果或者超时
             future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
+            // 设置下一次执行任务的时间间隔
             delay.set(timeoutMillis);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
         } catch (TimeoutException e) {
             logger.warn("task supervisor timed out", e);
+            // 超时计数
             timeoutCounter.increment();
 
+            // 设置下一次执行任务的时间间隔
             long currentDelay = delay.get();
             long newDelay = Math.min(maxDelay, currentDelay * 2);
             delay.compareAndSet(currentDelay, newDelay);
@@ -79,6 +111,7 @@ public class TimedSupervisorTask extends TimerTask {
                 logger.warn("task supervisor rejected the task", e);
             }
 
+            // 拒绝计数
             rejectedCounter.increment();
         } catch (Throwable e) {
             if (executor.isShutdown() || scheduler.isShutdown()) {
@@ -87,12 +120,15 @@ public class TimedSupervisorTask extends TimerTask {
                 logger.warn("task supervisor threw an exception", e);
             }
 
+            // 报错计数
             throwableCounter.increment();
         } finally {
+            // 取消未完成的任务
             if (future != null) {
                 future.cancel(true);
             }
 
+            // 调度下一次TimedSupervisorTask任务
             if (!scheduler.isShutdown()) {
                 scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
             }
