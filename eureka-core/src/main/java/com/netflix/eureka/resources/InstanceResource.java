@@ -90,6 +90,8 @@ public class InstanceResource {
     /**
      * A put request for renewing lease from a client instance.
      *
+     * 续约一个应用实例信息的租约
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -272,6 +274,8 @@ public class InstanceResource {
     /**
      * Handles cancellation of leases for this particular instance.
      *
+     * 下线一个应用实例信息的租约
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -284,7 +288,7 @@ public class InstanceResource {
         try {
             // 服务下线
             boolean isSuccess = registry.cancel(app.getName(), id,
-                "true".equals(isReplication));
+                    "true".equals(isReplication));
 
             // 下线成功
             if (isSuccess) {

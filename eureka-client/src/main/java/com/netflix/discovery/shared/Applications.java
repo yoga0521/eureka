@@ -80,6 +80,9 @@ public class Applications {
 
     private static final String STATUS_DELIMITER = "_";
 
+    /**
+     * 应用集合一致性哈希码
+     */
     private String appsHashCode;
     private Long versionDelta;
     @XStreamImplicit
@@ -101,8 +104,8 @@ public class Applications {
      */
     @JsonCreator
     public Applications(@JsonProperty("appsHashCode") String appsHashCode,
-            @JsonProperty("versionDelta") Long versionDelta,
-            @JsonProperty("application") List<Application> registeredApplications) {
+                        @JsonProperty("versionDelta") Long versionDelta,
+                        @JsonProperty("application") List<Application> registeredApplications) {
         this.applications = new ConcurrentLinkedQueue<Application>();
         this.appNameApplicationMap = new ConcurrentHashMap<String, Application>();
         this.virtualHostNameAppMap = new ConcurrentHashMap<String, VipIndexSupport>();
@@ -160,9 +163,9 @@ public class Applications {
      */
     public List<InstanceInfo> getInstancesByVirtualHostName(String virtualHostName) {
         return Optional.ofNullable(this.virtualHostNameAppMap.get(virtualHostName.toUpperCase(Locale.ROOT)))
-            .map(VipIndexSupport::getVipList)
-            .map(AtomicReference::get)
-            .orElseGet(Collections::emptyList); 
+                .map(VipIndexSupport::getVipList)
+                .map(AtomicReference::get)
+                .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -178,7 +181,7 @@ public class Applications {
         return Optional.ofNullable(this.secureVirtualHostNameAppMap.get(secureVirtualHostName.toUpperCase(Locale.ROOT)))
                 .map(VipIndexSupport::getVipList)
                 .map(AtomicReference::get)
-                .orElseGet(Collections::emptyList);        
+                .orElseGet(Collections::emptyList);
     }
 
     /**
@@ -212,7 +215,7 @@ public class Applications {
 
     /**
      * Used by the eureka server. Not for external use.
-     * 
+     *
      * @return the string indicating the hashcode based on the applications
      *         stored.
      *
@@ -226,26 +229,31 @@ public class Applications {
      * Gets the hash code for this <em>applications</em> instance. Used for
      * comparison of instances between eureka server and eureka client.
      *
+     * 获取这个应用集合实例的哈希码, 用于比较Eureka-Server和Eureka-Client之间的实例。
+     *
      * @return the internal hash code representation indicating the information
      *         about the instances.
      */
     @JsonIgnore
     public String getReconcileHashCode() {
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
+        // 计算每个应用实例状态的数量
         populateInstanceCountMap(instanceCountMap);
+        // 计算hashcode
         return getReconcileHashCode(instanceCountMap);
     }
 
     /**
      * Populates the provided instance count map. The instance count map is used
      * as part of the general app list synchronization mechanism.
-     * 
+     *
      * @param instanceCountMap
      *            the map to populate
      */
     public void populateInstanceCountMap(Map<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
+                // 计数
                 AtomicInteger instanceCount = instanceCountMap.computeIfAbsent(info.getStatus().name(),
                         k -> new AtomicInteger(0));
                 instanceCount.incrementAndGet();
@@ -257,7 +265,7 @@ public class Applications {
      * Gets the reconciliation hashcode. The hashcode is used to determine
      * whether the applications list has changed since the last time it was
      * acquired.
-     * 
+     *
      * @param instanceCountMap
      *            the instance count map to use for generating the hash
      * @return the hash code for this instance
@@ -265,6 +273,7 @@ public class Applications {
     public static String getReconcileHashCode(Map<String, AtomicInteger> instanceCountMap) {
         StringBuilder reconcileHashCode = new StringBuilder(75);
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap.entrySet()) {
+            // status_count
             reconcileHashCode.append(mapEntry.getKey()).append(STATUS_DELIMITER).append(mapEntry.getValue().get())
                     .append(STATUS_DELIMITER);
         }
@@ -274,7 +283,7 @@ public class Applications {
     /**
      * Shuffles the provided instances so that they will not always be returned
      * in the same order.
-     * 
+     *
      * @param filterUpInstances
      *            whether to return only UP instances
      */
@@ -285,7 +294,7 @@ public class Applications {
     /**
      * Shuffles a whole region so that the instances will not always be returned
      * in the same order.
-     * 
+     *
      * @param remoteRegionsRegistry
      *            the map of remote region names to their registries
      * @param clientConfig
@@ -295,16 +304,16 @@ public class Applications {
      *            the instance region checker
      */
     public void shuffleAndIndexInstances(Map<String, Applications> remoteRegionsRegistry,
-            EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
+                                         EurekaClientConfig clientConfig, InstanceRegionChecker instanceRegionChecker) {
         shuffleInstances(clientConfig.shouldFilterOnlyUpInstances(), true, remoteRegionsRegistry, clientConfig,
                 instanceRegionChecker);
     }
 
-    private void shuffleInstances(boolean filterUpInstances, 
-            boolean indexByRemoteRegions,
-            @Nullable Map<String, Applications> remoteRegionsRegistry, 
-            @Nullable EurekaClientConfig clientConfig,
-            @Nullable InstanceRegionChecker instanceRegionChecker) {
+    private void shuffleInstances(boolean filterUpInstances,
+                                  boolean indexByRemoteRegions,
+                                  @Nullable Map<String, Applications> remoteRegionsRegistry,
+                                  @Nullable EurekaClientConfig clientConfig,
+                                  @Nullable InstanceRegionChecker instanceRegionChecker) {
         Map<String, VipIndexSupport> secureVirtualHostNameAppMap = new HashMap<>();
         Map<String, VipIndexSupport> virtualHostNameAppMap = new HashMap<>();
         for (Application application : appNameApplicationMap.values()) {
@@ -384,12 +393,12 @@ public class Applications {
 
     /**
      * Adds the instances to the internal vip address map.
-     * 
+     *
      * @param app
      *            - the applications for which the instances need to be added.
      */
     private void addInstancesToVIPMaps(Application app, Map<String, VipIndexSupport> virtualHostNameAppMap,
-            Map<String, VipIndexSupport> secureVirtualHostNameAppMap) {
+                                       Map<String, VipIndexSupport> secureVirtualHostNameAppMap) {
         // Check and add the instances to the their respective virtual host name
         // mappings
         for (InstanceInfo info : app.getInstances()) {

@@ -17,6 +17,8 @@ public interface ResponseCache {
     /**
      * Get the cached information about applications.
      *
+     * 获取应用集合相关的缓存信息。
+     *
      * <p>
      * If the cached information is not available it is generated on the first
      * request. After the first request, the information is then updated
@@ -26,10 +28,12 @@ public interface ResponseCache {
      * @param key the key for which the cached information needs to be obtained.
      * @return payload which contains information about the applications.
      */
-     String get(Key key);
+    String get(Key key);
 
     /**
      * Get the compressed information about the applications.
+     *
+     * 获取应用集合相关的压缩信息。
      *
      * @param key the key for which the compressed cached information needs to be obtained.
      * @return compressed payload which contains information about the applications.

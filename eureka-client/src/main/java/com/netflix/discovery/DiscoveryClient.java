@@ -245,6 +245,9 @@ public class DiscoveryClient implements EurekaClient {
      */
     private InstanceInfoReplicator instanceInfoReplicator;
 
+    /**
+     * 注册信息的应用实例数
+     */
     private volatile int registrySize = 0;
     /**
      * 最后成功从Eureka-Server获取注册信息的时间戳
@@ -1103,8 +1106,10 @@ public class DiscoveryClient implements EurekaClient {
         try {
             // If the delta is disabled or if it is the first time, get all
             // applications
+            // 获取本地缓存中的应用实例集合
             Applications applications = getApplications();
 
+            // 全量获取
             if (clientConfig.shouldDisableDelta()
                     || (!Strings.isNullOrEmpty(clientConfig.getRegistryRefreshSingleVipAddress()))
                     || forceFullRegistryFetch
@@ -1119,11 +1124,15 @@ public class DiscoveryClient implements EurekaClient {
                 logger.info("Registered Applications size is zero : {}",
                         (applications.getRegisteredApplications().size() == 0));
                 logger.info("Application version is -1: {}", (applications.getVersion() == -1));
+                // 执行全量获取
                 getAndStoreFullRegistry();
             } else {
+                // 执行增量获取
                 getAndUpdateDelta(applications);
             }
+            // 设置应用集合的hashcode
             applications.setAppsHashCode(applications.getReconcileHashCode());
+            // 打印本地应用实例总数
             logTotalInstances();
         } catch (Throwable e) {
             logger.error(PREFIX + "{} - was unable to refresh its cache! status = {}", appPathIdentifier, e.getMessage(), e);
@@ -1148,6 +1157,7 @@ public class DiscoveryClient implements EurekaClient {
 
     private synchronized void updateInstanceRemoteStatus() {
         // Determine this instance's status for this app and set to UNKNOWN if not found
+        // 获取应用实例状态
         InstanceInfo.InstanceStatus currentRemoteInstanceStatus = null;
         if (instanceInfo.getAppName() != null) {
             Application app = getApplication(instanceInfo.getAppName());
@@ -1163,6 +1173,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         // Notify if status changed
+        // 如果本地缓存状态跟最新的应用实例状态不同，更新本地缓存
         if (lastRemoteInstanceStatus != currentRemoteInstanceStatus) {
             onRemoteStatusChanged(lastRemoteInstanceStatus, currentRemoteInstanceStatus);
             lastRemoteInstanceStatus = currentRemoteInstanceStatus;
@@ -1203,10 +1214,12 @@ public class DiscoveryClient implements EurekaClient {
      *             on error.
      */
     private void getAndStoreFullRegistry() throws Throwable {
+        // 获取信息的次数
         long currentUpdateGeneration = fetchRegistryGeneration.get();
 
         logger.info("Getting all instance registry info from the eureka server");
 
+        // 全量获取注册信息
         Applications apps = null;
         EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
                 ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
@@ -1216,6 +1229,7 @@ public class DiscoveryClient implements EurekaClient {
         }
         logger.info("The response status is {}", httpResponse.getStatusCode());
 
+        // 设置本地缓存
         if (apps == null) {
             logger.error("The application is null for some reason. Not storing this information");
         } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
@@ -1242,8 +1256,10 @@ public class DiscoveryClient implements EurekaClient {
      * @throws Throwable on error
      */
     private void getAndUpdateDelta(Applications applications) throws Throwable {
+        // 获取信息的次数
         long currentUpdateGeneration = fetchRegistryGeneration.get();
 
+        // 增量获取注册信息
         Applications delta = null;
         EurekaHttpResponse<Applications> httpResponse = eurekaTransport.queryClient.getDelta(remoteRegionsRef.get());
         if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
@@ -1251,24 +1267,31 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         if (delta == null) {
+            // 增量获取失败，进行全量获取注册信息
             logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
                     + "Hence got the full registry.");
             getAndStoreFullRegistry();
         } else if (fetchRegistryGeneration.compareAndSet(currentUpdateGeneration, currentUpdateGeneration + 1)) {
             logger.debug("Got delta update with apps hashcode {}", delta.getAppsHashCode());
             String reconcileHashCode = "";
+            // 尝试加锁
             if (fetchRegistryUpdateLock.tryLock()) {
                 try {
+                    // 将增量获取的应用集合与本地的应用集合合并
                     updateDelta(delta);
+                    // 计算本地的应用集合的哈希码
                     reconcileHashCode = getReconcileHashCode(applications);
                 } finally {
+                    // 解锁
                     fetchRegistryUpdateLock.unlock();
                 }
             } else {
                 logger.warn("Cannot acquire update lock, aborting getAndUpdateDelta");
             }
             // There is a diff in number of instances for some reason
+            // hashcode不一致
             if (!reconcileHashCode.equals(delta.getAppsHashCode()) || clientConfig.shouldLogDeltaDiff()) {
+                // 全量获取注册信息，并设置到本地缓存，和getAndStoreFullRegistry()基本类似
                 reconcileAndLogDifference(delta, reconcileHashCode);  // this makes a remoteCall
             }
         } else {
@@ -1343,6 +1366,8 @@ public class DiscoveryClient implements EurekaClient {
      * Updates the delta information fetches from the eureka server into the
      * local cache.
      *
+     * 将从Eureka-Server获取的增量信息更新到本地缓存中。
+     *
      * @param delta
      *            the delta information received from eureka server in the last
      *            poll cycle.
@@ -1369,6 +1394,7 @@ public class DiscoveryClient implements EurekaClient {
                         applications.addApplication(app);
                     }
                     logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
+                    // 添加应用实例
                     applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
                 } else if (ActionType.MODIFIED.equals(instance.getActionType())) {
                     Application existingApp = applications.getRegisteredApplications(instance.getAppName());
@@ -1377,6 +1403,7 @@ public class DiscoveryClient implements EurekaClient {
                     }
                     logger.debug("Modified instance {} to the existing apps ", instance.getId());
 
+                    // 添加应用实例
                     applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 
                 } else if (ActionType.DELETED.equals(instance.getActionType())) {
@@ -1385,6 +1412,7 @@ public class DiscoveryClient implements EurekaClient {
                         applications.addApplication(app);
                     }
                     logger.debug("Deleted instance {} to the existing apps ", instance.getId());
+                    // 删除应用实例
                     applications.getRegisteredApplications(instance.getAppName()).removeInstance(instance);
                 }
             }
@@ -1392,6 +1420,7 @@ public class DiscoveryClient implements EurekaClient {
         logger.debug("The total number of instances fetched by the delta processor : {}", deltaCount);
 
         getApplications().setVersion(delta.getVersion());
+        // 过滤以及打乱应用集合
         getApplications().shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
 
         for (Applications applications : remoteRegionVsApps.values()) {
@@ -1621,6 +1650,7 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * The task that fetches the registry information at specified intervals.
      *
+     *  定时刷新本地服务列表缓存     *
      */
     class CacheRefreshThread implements Runnable {
         public void run() {
@@ -1657,12 +1687,16 @@ public class DiscoveryClient implements EurekaClient {
                 }
             }
 
+            // 获取注册信息
             boolean success = fetchRegistry(remoteRegionsModified);
             if (success) {
+                // 设置注册信息的应用实例数
                 registrySize = localRegionApps.get().size();
+                // 设置最近成功获取注册信息的时间戳
                 lastSuccessfulRegistryFetchTimestamp = System.currentTimeMillis();
             }
 
+            // 打印日志
             if (logger.isDebugEnabled()) {
                 StringBuilder allAppsHashCodes = new StringBuilder();
                 allAppsHashCodes.append("Local region apps hashcode: ");
@@ -1743,6 +1777,9 @@ public class DiscoveryClient implements EurekaClient {
      * receiving traffic during start ups.
      * </p>
      *
+     * 根据配置 eureka.shouldFilterOnlyUpInstances = true 过滤只保留状态为开启( UP )的应用实例
+     * 并随机打乱应用实例顺序，打乱后，实现调用应用服务的随机性
+     *
      * @param apps
      *            The applications that needs to be filtered and shuffled.
      * @return The applications after the filter and the shuffle.
@@ -1770,6 +1807,8 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Invoked when the remote status of this client has changed.
      * Subclasses may override this method to implement custom behavior if needed.
+     *
+     *  状态改变监听
      *
      * @param oldStatus the previous remote {@link InstanceStatus}
      * @param newStatus the new remote {@link InstanceStatus}

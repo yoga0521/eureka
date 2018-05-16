@@ -63,6 +63,9 @@ public class ApplicationsResource {
 
     private final EurekaServerConfig serverConfig;
     private final PeerAwareInstanceRegistry registry;
+    /**
+     * 响应缓存
+     */
     private final ResponseCache responseCache;
 
     @Inject
@@ -106,6 +109,8 @@ public class ApplicationsResource {
      *                   The applications returned from the remote region can be limited to the applications
      *                   returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
      *
+     * 获取应用集合（Applications）
+     *
      * @return a response containing information about all {@link com.netflix.discovery.shared.Applications}
      *         from the {@link AbstractInstanceRegistry}.
      */
@@ -130,10 +135,15 @@ public class ApplicationsResource {
         // Check if the server allows the access to the registry. The server can
         // restrict access if it is not
         // ready to serve traffic depending on various reasons.
+        // 判断是否允许访问注册表
+        // Eureka-Server 启动完成，但是未处于就绪( Ready )状态，不接受请求全量应用注册信息的请求。
+        // 例如，Eureka-Server 启动时，未能从其他 Eureka-Server 集群的节点获取到应用注册信息。
         if (!registry.shouldAllowAccess(isRemoteRegionRequested)) {
             return Response.status(Status.FORBIDDEN).build();
         }
+        // 请求的API版本，默认为V2
         CurrentRequestVersion.set(Version.toEnum(version));
+        // 返回的数据格式，默认为JSON
         KeyType keyType = Key.KeyType.JSON;
         String returnMediaType = MediaType.APPLICATION_JSON;
         if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
@@ -141,6 +151,7 @@ public class ApplicationsResource {
             returnMediaType = MediaType.APPLICATION_XML;
         }
 
+        // 缓存响应Key
         Key cacheKey = new Key(Key.EntityType.Application,
                 ResponseCacheImpl.ALL_APPS,
                 keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions

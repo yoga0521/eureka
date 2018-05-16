@@ -54,7 +54,7 @@ import com.thoughtworks.xstream.annotations.XStreamOmitField;
 @XStreamAlias("application")
 @JsonRootName("application")
 public class Application {
-    
+
     private static Random shuffleRandom = new Random();
 
     @Override
@@ -100,14 +100,20 @@ public class Application {
     /**
      * Add the given instance info the list.
      *
+     * 将指定的应用实例信息添加到列表中
+     *
      * @param i
      *            the instance info object to be added.
      */
     public void addInstance(InstanceInfo i) {
+        // 添加都应用实例map中
         instancesMap.put(i.getId(), i);
         synchronized (instances) {
+            // 移除原有的实例
             instances.remove(i);
+            // 添加新的实例
             instances.add(i);
+            // 该标志主要用于打印，并无实际业务逻辑
             isDirty = true;
         }
     }
@@ -148,7 +154,7 @@ public class Application {
     @JsonIgnore
     public List<InstanceInfo> getInstancesAsIsFromEureka() {
         synchronized (instances) {
-           return new ArrayList<InstanceInfo>(this.instances);
+            return new ArrayList<InstanceInfo>(this.instances);
         }
     }
 
@@ -253,10 +259,13 @@ public class Application {
     }
 
     private void removeInstance(InstanceInfo i, boolean markAsDirty) {
+        // 移除map中的应用实例
         instancesMap.remove(i.getId());
         synchronized (instances) {
+            // 移除应用实例
             instances.remove(i);
             if (markAsDirty) {
+                // 该标志主要用于打印，并无实际业务逻辑
                 isDirty = true;
             }
         }

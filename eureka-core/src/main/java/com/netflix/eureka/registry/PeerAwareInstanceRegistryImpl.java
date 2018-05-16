@@ -382,7 +382,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             // Eureka-Server集群之间的复制
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
             // 减少 numberOfRenewsPerMinThreshold，expectedNumberOfRenewsPerMin
-            // 自我保护相关， todo
+            // 自我保护属性
             synchronized (lock) {
                 if (this.expectedNumberOfRenewsPerMin > 0) {
                     // Since the client wants to cancel it, reduce the threshold (1 for 30 seconds, 2 for a minute)

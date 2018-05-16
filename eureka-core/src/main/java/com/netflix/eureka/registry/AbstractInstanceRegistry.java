@@ -94,6 +94,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * value ：应用名(应用实例信息编号)
      */
     private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
+    /**
+     * 最近租约改变的队列
+     */
     private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
 
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -101,6 +104,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final Lock write = readWriteLock.writeLock();
     protected final Object lock = new Object();
 
+    /**
+     * 定时任务扫描队列，当 lastUpdateTime 超过一定时长后进行移除
+     */
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
     /**
@@ -287,7 +293,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             // 添加到应用实例覆盖状态映射（Eureka-Server 初始化使用），集群复制相关 todo
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
-                                + "overrides", registrant.getOverriddenStatus(), registrant.getId());
+                        + "overrides", registrant.getOverriddenStatus(), registrant.getId());
                 if (!overriddenInstanceStatusMap.containsKey(registrant.getId())) {
                     logger.info("Not found overridden id {} and hence adding it", registrant.getId());
                     overriddenInstanceStatusMap.put(registrant.getId(), registrant.getOverriddenStatus());
@@ -449,8 +455,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
                                     + "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
-                                    instanceInfo.getOverriddenStatus().name(),
-                                    instanceInfo.getId());
+                            instanceInfo.getOverriddenStatus().name(),
+                            instanceInfo.getId());
                     instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
 
                 }
@@ -957,26 +963,37 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Deprecated
     public Applications getApplicationDeltas() {
+        // 添加增量获取次数配合netflix servo监控
         GET_ALL_CACHE_MISS_DELTA.increment();
+        // 初始化变化的应用集合
         Applications apps = new Applications();
         apps.setVersion(responseCache.getVersionDelta().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
         try {
+            // 获取读锁
             write.lock();
+            // 获取最近租约变更记录队列
             Iterator<RecentlyChangedItem> iter = this.recentlyChangedQueue.iterator();
             logger.debug("The number of elements in the delta queue is : {}",
                     this.recentlyChangedQueue.size());
+            // 拼装变化的应用集合
             while (iter.hasNext()) {
+                // 获取租约
                 Lease<InstanceInfo> lease = iter.next().getLeaseInfo();
+                // 获取租约实体
                 InstanceInfo instanceInfo = lease.getHolder();
                 logger.debug(
                         "The instance id {} is found with status {} and actiontype {}",
                         instanceInfo.getId(), instanceInfo.getStatus().name(), instanceInfo.getActionType().name());
+                // 根据appName获取应用
                 Application app = applicationInstancesMap.get(instanceInfo
                         .getAppName());
                 if (app == null) {
+                    // 创建新的应用
                     app = new Application(instanceInfo.getAppName());
+                    // 将app添加到应用实例map中
                     applicationInstancesMap.put(instanceInfo.getAppName(), app);
+                    // 将app添加到应用集合
                     apps.addApplication(app);
                 }
                 app.addInstance(decorateInstanceInfo(lease));
@@ -999,6 +1016,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
 
+            // 全量获取应用集合，计算hashcode
             Applications allApps = getApplications(!disableTransparentFallback);
             apps.setAppsHashCode(allApps.getReconcileHashCode());
             return apps;
@@ -1162,7 +1180,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         List<InstanceInfo> list = new ArrayList<InstanceInfo>();
 
         for (Iterator<Entry<String, Map<String, Lease<InstanceInfo>>>> iter =
-                     registry.entrySet().iterator(); iter.hasNext(); ) {
+             registry.entrySet().iterator(); iter.hasNext(); ) {
 
             Map<String, Lease<InstanceInfo>> leaseMap = iter.next().getValue();
             if (leaseMap != null) {
@@ -1285,8 +1303,18 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         responseCache.invalidate(appName, vipAddress, secureVipAddress);
     }
 
+    /**
+     * 最近租约变更记录
+     * 当应用实例注册、下线、状态变更时，创建最近租约变更记录( RecentlyChangedItem ) 到队列
+     */
     private static final class RecentlyChangedItem {
+        /**
+         * 最新更新时间戳
+         */
         private long lastUpdateTime;
+        /**
+         * 租约
+         */
         private Lease<InstanceInfo> leaseInfo;
 
         public RecentlyChangedItem(Lease<InstanceInfo> lease) {
@@ -1405,14 +1433,15 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     protected abstract InstanceStatusOverrideRule getInstanceInfoOverrideRule();
 
     protected InstanceInfo.InstanceStatus getOverriddenInstanceStatus(InstanceInfo r,
-                                                                    Lease<InstanceInfo> existingLease,
-                                                                    boolean isReplication) {
+                                                                      Lease<InstanceInfo> existingLease,
+                                                                      boolean isReplication) {
         InstanceStatusOverrideRule rule = getInstanceInfoOverrideRule();
         logger.debug("Processing override status using rule: {}", rule);
         return rule.apply(r, existingLease, isReplication).status();
     }
 
     private TimerTask getDeltaRetentionTask() {
+        // 创建清理的定时任务
         return new TimerTask() {
 
             @Override
