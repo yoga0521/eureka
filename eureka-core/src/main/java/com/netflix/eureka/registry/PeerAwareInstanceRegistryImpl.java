@@ -379,7 +379,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                           final boolean isReplication) {
         // 调用父类的下线方法
         if (super.cancel(appName, id, isReplication)) {
-            // Eureka-Server集群之间的复制
+            // Eureka-Server集群之间的复制 todo
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
             // 减少 numberOfRenewsPerMinThreshold，expectedNumberOfRenewsPerMin
             // 自我保护属性
@@ -421,7 +421,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         }
         // 调用父类的register方法，进行应用实例信息注册
         super.register(info, leaseDuration, isReplication);
-        // Eureka-Server集群之间的复制
+        // Eureka-Server集群之间的复制 todo
         replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
     }
 
@@ -434,7 +434,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public boolean renew(final String appName, final String id, final boolean isReplication) {
         // 调用父类的renew方法，进行续约
         if (super.renew(appName, id, isReplication)) {
-            // Eureka-Server集群之间的复制
+            // Eureka-Server集群之间的复制 todo
             replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);
             return true;
         }
@@ -452,7 +452,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public boolean statusUpdate(final String appName, final String id,
                                 final InstanceStatus newStatus, String lastDirtyTimestamp,
                                 final boolean isReplication) {
+        // 调用父类的statusUpdate方法，进行覆盖状态更新
         if (super.statusUpdate(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
+            // 集群复制相关 todo
             replicateToPeers(Action.StatusUpdate, appName, id, null, newStatus, isReplication);
             return true;
         }
@@ -464,7 +466,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                         InstanceStatus newStatus,
                                         String lastDirtyTimestamp,
                                         boolean isReplication) {
+        // 调用父类的deleteStatusOverride方法，删除覆盖状态
         if (super.deleteStatusOverride(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
+            // 集群复制相关 todo
             replicateToPeers(Action.DeleteStatusOverride, appName, id, null, null, isReplication);
             return true;
         }

@@ -8,6 +8,8 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  * A single rule that if matched it returns an instance status.
  * The idea is to use an ordered list of such rules and pick the first result that matches.
  *
+ * 应用实例状态覆盖规则接口
+ *
  * It is designed to be used by
  * {@link AbstractInstanceRegistry#getOverriddenInstanceStatus(InstanceInfo, Lease, boolean)}
  *

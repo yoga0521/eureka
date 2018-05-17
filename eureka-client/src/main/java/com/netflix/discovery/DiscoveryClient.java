@@ -515,7 +515,7 @@ public class DiscoveryClient implements EurekaClient {
                             .build()
             );  // use direct handoff
 
-            // 初始化本地缓存刷新线程池，
+            // 初始化本地缓存刷新线程池，固定间隔向Eureka-Server获取注册信息，刷新本地注册信息缓存
             cacheRefreshExecutor = new ThreadPoolExecutor(
                     1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
                     new SynchronousQueue<Runnable>(),
@@ -1455,7 +1455,7 @@ public class DiscoveryClient implements EurekaClient {
                     registryFetchIntervalSeconds, TimeUnit.SECONDS);
         }
 
-        // 向 Eureka-Server 心跳（续租）执行器
+        // 向 Eureka-Server 注册（续租）执行器
         if (clientConfig.shouldRegisterWithEureka()) {
             // 续租时间间隔，默认为30s
             int renewalIntervalInSecs = instanceInfo.getLeaseInfo().getRenewalIntervalInSecs();
@@ -1522,6 +1522,9 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    /**
+     * 取消定时任务
+     */
     private void cancelScheduledTasks() {
         if (instanceInfoReplicator != null) {
             instanceInfoReplicator.stop();

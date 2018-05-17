@@ -17,6 +17,9 @@ public class StatusOverrideResult {
     }
 
     // Does the rule match?
+    /**
+     * 状态覆盖成功返回true，失败返回false
+     */
     private final boolean matches;
 
     // The status computed by the rule.

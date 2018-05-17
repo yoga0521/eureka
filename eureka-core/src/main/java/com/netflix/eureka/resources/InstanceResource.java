@@ -168,14 +168,18 @@ public class InstanceResource {
             @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
+            // 如果应用实例不存在
             if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
+                // 返回notfound
                 return Response.status(Status.NOT_FOUND).build();
             }
+            // 覆盖状态
             boolean isSuccess = registry.statusUpdate(app.getName(), id,
                     InstanceStatus.valueOf(newStatus), lastDirtyTimestamp,
                     "true".equals(isReplication));
 
+            // 返回结果
             if (isSuccess) {
                 logger.info("Status updated: {} - {} - {}", app.getName(), id, newStatus);
                 return Response.ok().build();
@@ -194,6 +198,8 @@ public class InstanceResource {
      * Removes status override for an instance, set with
      * {@link #statusUpdate(String, String, String)}.
      *
+     * 移除实例覆盖状态
+     *
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
@@ -209,15 +215,19 @@ public class InstanceResource {
             @QueryParam("value") String newStatusValue,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         try {
+            // 如果应用实例不存在
             if (registry.getInstanceByAppAndId(app.getName(), id) == null) {
                 logger.warn("Instance not found: {}/{}", app.getName(), id);
+                // 返回notfound
                 return Response.status(Status.NOT_FOUND).build();
             }
 
+            // 删除覆盖状态
             InstanceStatus newStatus = newStatusValue == null ? InstanceStatus.UNKNOWN : InstanceStatus.valueOf(newStatusValue);
             boolean isSuccess = registry.deleteStatusOverride(app.getName(), id,
                     newStatus, lastDirtyTimestamp, "true".equals(isReplication));
 
+            // 返回结果
             if (isSuccess) {
                 logger.info("Status override removed: {} - {}", app.getName(), id);
                 return Response.ok().build();
