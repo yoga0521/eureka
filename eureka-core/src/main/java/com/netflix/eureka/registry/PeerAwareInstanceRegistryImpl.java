@@ -396,7 +396,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                           final boolean isReplication) {
         // 调用父类的下线方法
         if (super.cancel(appName, id, isReplication)) {
-            // Eureka-Server集群之间的复制 todo
+            // Eureka-Server集群之间的复制
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
             // 减少 numberOfRenewsPerMinThreshold，expectedNumberOfRenewsPerMin
             // 自我保护属性
@@ -451,7 +451,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     public boolean renew(final String appName, final String id, final boolean isReplication) {
         // 调用父类的renew方法，进行续约
         if (super.renew(appName, id, isReplication)) {
-            // Eureka-Server集群之间的复制 todo
+            // Eureka-Server集群之间的复制
             replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);
             return true;
         }
@@ -471,7 +471,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                 final boolean isReplication) {
         // 调用父类的statusUpdate方法，进行覆盖状态更新
         if (super.statusUpdate(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
-            // 集群复制相关 todo
+            // Eureka-Server集群之间的复制
             replicateToPeers(Action.StatusUpdate, appName, id, null, newStatus, isReplication);
             return true;
         }
@@ -485,7 +485,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                         boolean isReplication) {
         // 调用父类的deleteStatusOverride方法，删除覆盖状态
         if (super.deleteStatusOverride(appName, id, newStatus, lastDirtyTimestamp, isReplication)) {
-            // 集群复制相关 todo
+            // Eureka-Server集群之间的复制
             replicateToPeers(Action.DeleteStatusOverride, appName, id, null, null, isReplication);
             return true;
         }
@@ -717,21 +717,26 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             // 设置版本
             CurrentRequestVersion.set(Version.V2);
             switch (action) {
+                // 下线触发的集群复制
                 case Cancel:
                     node.cancel(appName, id);
                     break;
+                // 续约触发的集群复制
                 case Heartbeat:
                     InstanceStatus overriddenStatus = overriddenInstanceStatusMap.get(id);
                     infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                     node.heartbeat(appName, id, infoFromRegistry, overriddenStatus, false);
                     break;
+                // 注册触发的集群复制
                 case Register:
                     node.register(info);
                     break;
+                // 状态更新触发的集群复制
                 case StatusUpdate:
                     infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                     node.statusUpdate(appName, id, newStatus, infoFromRegistry);
                     break;
+                // 删除覆盖状态的集群复制
                 case DeleteStatusOverride:
                     infoFromRegistry = getInstanceByAppAndId(appName, id, false);
                     node.deleteStatusOverride(appName, id, infoFromRegistry);

@@ -129,17 +129,28 @@ public class PeerEurekaNode {
      * Sends the registration information of {@link InstanceInfo} receiving by
      * this node to the peer node represented by this class.
      *
+     * 将实例的注册信息发送给其他节点
+     *
      * @param info
      *            the instance information {@link InstanceInfo} of any instance
      *            that is send to this instance.
      * @throws Exception
      */
     public void register(final InstanceInfo info) throws Exception {
+        // 任务过期时间
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        // 执行批处理任务
         batchingDispatcher.process(
+                // 任务id，相同应用实例的相同同步操作使用相同任务编号，
+                // 批处理中，接收线程(Runner)合并任务，将相同任务编号的任务合并，只执行一次。
+                // 例如，Eureka-Server 同步某个应用实例的 Heartbeat 操作，接收同步的 Eureak-Server 挂了，
+                // 一方面这个应用的这次操作会重试，另一方面，这个应用实例会发起新的 Heartbeat 操作，
+                // 通过任务编号合并，接收同步的 Eureka-Server 恢复后，减少收到重复积压的任务。
                 taskId("register", info),
+                // ReplicationTask 子类
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
                     public EurekaHttpResponse<Void> execute() {
+                        // 发送注册请求，并返回结果
                         return replicationClient.register(info);
                     }
                 },
@@ -160,7 +171,7 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void cancel(final String appName, final String id) throws Exception {
-        // 过期时间
+        // 任务过期时间
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
         // 执行批处理任务
         batchingDispatcher.process(
@@ -174,6 +185,7 @@ public class PeerEurekaNode {
                 new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
                     @Override
                     public EurekaHttpResponse<Void> execute() {
+                        // 发送下线请求，并返回结果
                         return replicationClient.cancel(appName, id);
                     }
 
@@ -195,6 +207,8 @@ public class PeerEurekaNode {
      * this class. If the instance does not exist the node, the instance
      * registration information is sent again to the peer node.
      *
+     * 将实例的续约信息发送给其他节点
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -213,9 +227,11 @@ public class PeerEurekaNode {
             replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             return;
         }
+        // 同步任务
         ReplicationTask replicationTask = new InstanceReplicationTask(targetHost, Action.Heartbeat, info, overriddenStatus, false) {
             @Override
             public EurekaHttpResponse<InstanceInfo> execute() throws Throwable {
+                // 发送续约请求，并返回结果
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             }
 
@@ -241,7 +257,9 @@ public class PeerEurekaNode {
                 }
             }
         };
+        // 任务过期时间
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        // 执行批处理任务
         batchingDispatcher.process(taskId("heartbeat", info), replicationTask, expiryTime);
     }
 
@@ -275,6 +293,8 @@ public class PeerEurekaNode {
      *
      * Send the status update of the instance.
      *
+     * 将实例的状态更新信息发送给其他节点
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -286,12 +306,21 @@ public class PeerEurekaNode {
      */
     public void statusUpdate(final String appName, final String id,
                              final InstanceStatus newStatus, final InstanceInfo info) {
+        // 任务过期时间
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
+        // 执行批处理任务
         batchingDispatcher.process(
+                // 任务id，相同应用实例的相同同步操作使用相同任务编号，
+                // 批处理中，接收线程(Runner)合并任务，将相同任务编号的任务合并，只执行一次。
+                // 例如，Eureka-Server 同步某个应用实例的 Heartbeat 操作，接收同步的 Eureak-Server 挂了，
+                // 一方面这个应用的这次操作会重试，另一方面，这个应用实例会发起新的 Heartbeat 操作，
+                // 通过任务编号合并，接收同步的 Eureka-Server 恢复后，减少收到重复积压的任务
                 taskId("statusUpdate", appName, id),
+                // ReplicationTask 子类
                 new InstanceReplicationTask(targetHost, Action.StatusUpdate, info, null, false) {
                     @Override
                     public EurekaHttpResponse<Void> execute() {
+                        // 发送状态更新请求，并返回结果
                         return replicationClient.statusUpdate(appName, id, newStatus, info);
                     }
                 },
@@ -302,6 +331,8 @@ public class PeerEurekaNode {
     /**
      * Delete instance status override.
      *
+     * 将实例删除覆盖状态信息发送给其他节点
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -310,12 +341,21 @@ public class PeerEurekaNode {
      *            the instance information of the instance.
      */
     public void deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
+        // 任务过期时间
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
+        // 执行批处理任务
         batchingDispatcher.process(
+                // 任务id，相同应用实例的相同同步操作使用相同任务编号，
+                // 批处理中，接收线程(Runner)合并任务，将相同任务编号的任务合并，只执行一次。
+                // 例如，Eureka-Server 同步某个应用实例的 Heartbeat 操作，接收同步的 Eureak-Server 挂了，
+                // 一方面这个应用的这次操作会重试，另一方面，这个应用实例会发起新的 Heartbeat 操作，
+                // 通过任务编号合并，接收同步的 Eureka-Server 恢复后，减少收到重复积压的任务
                 taskId("deleteStatusOverride", appName, id),
+                // ReplicationTask 子类
                 new InstanceReplicationTask(targetHost, Action.DeleteStatusOverride, info, null, false) {
                     @Override
                     public EurekaHttpResponse<Void> execute() {
+                        // 发送删除覆盖状态请求，并返回结果
                         return replicationClient.deleteStatusOverride(appName, id, info);
                     }
                 },

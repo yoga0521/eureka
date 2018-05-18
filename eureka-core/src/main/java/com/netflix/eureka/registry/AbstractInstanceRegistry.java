@@ -293,7 +293,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                         registrant.getAppName() + "(" + registrant.getId() + ")"));
             }
             // This is where the initial state transfer of overridden status happens
-            // 添加到应用实例覆盖状态映射（Eureka-Server 初始化使用），集群复制相关 todo
+            // 添加到应用实例覆盖状态映射（Eureka-Server 初始化使用），集群复制相关
             if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
                 logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
                         + "overrides", registrant.getOverriddenStatus(), registrant.getId());
