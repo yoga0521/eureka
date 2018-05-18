@@ -100,7 +100,9 @@ public class PeerEurekaNode {
         this.maxProcessingDelayMs = config.getMaxTimeForReplication();
 
         String batcherName = getBatcherName();
+        // 初始化集群复制处理器
         ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(targetHost, replicationClient);
+        // 创建任务批处理分发器
         this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
@@ -111,6 +113,7 @@ public class PeerEurekaNode {
                 retrySleepTimeMs,
                 taskProcessor
         );
+        // 创建单任务分发器
         this.nonBatchingDispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(
                 targetHost,
                 config.getMaxElementsInStatusReplicationPool(),
@@ -148,6 +151,8 @@ public class PeerEurekaNode {
      * Send the cancellation information of an instance to the node represented
      * by this class.
      *
+     * 将实例的取消信息发送给其他节点
+     *
      * @param appName
      *            the application name of the instance.
      * @param id
@@ -155,9 +160,17 @@ public class PeerEurekaNode {
      * @throws Exception
      */
     public void cancel(final String appName, final String id) throws Exception {
+        // 过期时间
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
+        // 执行批处理任务
         batchingDispatcher.process(
+                // 任务id，相同应用实例的相同同步操作使用相同任务编号，
+                // 批处理中，接收线程(Runner)合并任务，将相同任务编号的任务合并，只执行一次。
+                // 例如，Eureka-Server 同步某个应用实例的 Heartbeat 操作，接收同步的 Eureak-Server 挂了，
+                // 一方面这个应用的这次操作会重试，另一方面，这个应用实例会发起新的 Heartbeat 操作，
+                // 通过任务编号合并，接收同步的 Eureka-Server 恢复后，减少收到重复积压的任务。
                 taskId("cancel", appName, id),
+                // ReplicationTask 子类
                 new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
                     @Override
                     public EurekaHttpResponse<Void> execute() {
@@ -166,6 +179,7 @@ public class PeerEurekaNode {
 
                     @Override
                     public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
+                        // 当Eureka-Server不存在下线的应用实例时，返回404，打印错误日志
                         super.handleFailure(statusCode, responseEntity);
                         if (statusCode == 404) {
                             logger.warn("{}: missing entry.", getTaskName());
@@ -207,17 +221,21 @@ public class PeerEurekaNode {
 
             @Override
             public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
+                // 当Eureka-Server不存在续约的应用实例时，返回404，打印错误日志
                 super.handleFailure(statusCode, responseEntity);
                 if (statusCode == 404) {
                     logger.warn("{}: missing entry.", getTaskName());
+                    // 如果实例信息不为null，注册该实例信息
                     if (info != null) {
                         logger.warn("{}: cannot find instance id {} and hence replicating the instance with status {}",
                                 getTaskName(), info.getId(), info.getStatus());
                         register(info);
                     }
                 } else if (config.shouldSyncWhenTimestampDiffers()) {
+                    // 本地的应用实例的lastDirtyTimestamp小于Eureka-Server应用实例的lastDirtyTimestamp
                     InstanceInfo peerInstanceInfo = (InstanceInfo) responseEntity;
                     if (peerInstanceInfo != null) {
+                        // 覆盖注册本地应用实例
                         syncInstancesIfTimestampDiffers(appName, id, info, peerInstanceInfo);
                     }
                 }
@@ -363,8 +381,10 @@ public class PeerEurekaNode {
 
                 if (infoFromPeer.getOverriddenStatus() != null && !InstanceStatus.UNKNOWN.equals(infoFromPeer.getOverriddenStatus())) {
                     logger.warn("Overridden Status info -id {}, mine {}, peer's {}", id, info.getOverriddenStatus(), infoFromPeer.getOverriddenStatus());
+                    // 将覆盖状态保存到覆盖状态集合
                     registry.storeOverriddenStatusIfRequired(appName, id, infoFromPeer.getOverriddenStatus());
                 }
+                // 注册来自节点应用实例信息
                 registry.register(infoFromPeer, true);
             }
         } catch (Throwable e) {

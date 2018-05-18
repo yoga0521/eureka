@@ -127,6 +127,7 @@ public class InstanceResource {
         if (lastDirtyTimestamp != null && serverConfig.shouldSyncWhenTimestampDiffers()) {
             response = this.validateDirtyTimestamp(Long.valueOf(lastDirtyTimestamp), isFromReplicaNode);
             // Store the overridden status since the validation found out the node that replicates wins
+            // 请求的 lastDirtyTimestamp 较大，将覆盖状态保存到覆盖状态集合
             if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()
                     && (overriddenStatus != null)
                     && !(InstanceStatus.UNKNOWN.name().equals(overriddenStatus))

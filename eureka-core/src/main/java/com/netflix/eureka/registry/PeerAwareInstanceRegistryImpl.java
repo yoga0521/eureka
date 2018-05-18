@@ -99,8 +99,14 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private boolean peerInstancesTransferEmptyOnStartup = true;
 
     public enum Action {
+        /**
+         * 这个操作会触发Eureka-Server集群间的复制
+         */
         Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
 
+        /**
+         * 监控相关
+         */
         private com.netflix.servo.monitor.Timer timer = Monitors.newTimer(this.name());
 
         public com.netflix.servo.monitor.Timer getTimer() {
@@ -202,6 +208,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * Populates the registry information from a peer eureka node. This
      * operation fails over to other nodes until the list is exhausted if the
      * communication fails.
+     *
+     * 从Eureka节点获取注册信息。
      */
     @Override
     public int syncUp() {
@@ -211,17 +219,23 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
             if (i > 0) {
                 try {
+                    // 读取注册信息失败，再次尝试获取的等待( sleep )间隔，默认为30 * 1000 ms
                     Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
                 } catch (InterruptedException e) {
                     logger.warn("Interrupted during registry transfer..");
                     break;
                 }
             }
+            // 获取应用集合
             Applications apps = eurekaClient.getApplications();
+            // 遍历已注册的应用集合
             for (Application app : apps.getRegisteredApplications()) {
+                // 遍历注册信息
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
+                        // 判断是否可以注册到自身节点
                         if (isRegisterable(instance)) {
+                            // 注册应用实例到自身节点，是否是复制标志为true
                             register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
                             count++;
                         }
@@ -244,6 +258,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         logger.info("Got {} instances from neighboring DS node", count);
         logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
         this.startupTime = System.currentTimeMillis();
+        // 标记Eureka-Server启动时，未获取到应用实例
         if (count > 0) {
             this.peerInstancesTransferEmptyOnStartup = false;
         }
@@ -330,6 +345,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * does not return registry information for a period specified in
      * {@link EurekaServerConfig#getWaitTimeInMsWhenSyncEmpty()}, if it cannot
      * get the registry information from the peer eureka nodes at start up.
+     *
+     * 检查Eureka-Client注册表是否允许访问
      *
      * @return false - if the instances count from a replica transfer returned
      *         zero and if the wait time has not elapsed, otherwise returns true
@@ -421,7 +438,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         }
         // 调用父类的register方法，进行应用实例信息注册
         super.register(info, leaseDuration, isReplication);
-        // Eureka-Server集群之间的复制 todo
+        // Eureka-Server集群之间的复制
         replicateToPeers(Action.Register, info.getAppName(), info.getId(), info, null, isReplication);
     }
 
@@ -619,6 +636,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     /**
      * Checks if an instance is registerable in this region. Instances from other regions are rejected.
      *
+     * 检查实例是否可在此区域注册, 来自其他地区的实例被拒绝。
+     * 主要用于亚马逊 AWS 环境下的判断，若非部署在亚马逊里，都返回 true
+     *
      * @param instanceInfo  th instance info information of the instance
      * @return true, if it can be registered in this server, false otherwise.
      */
@@ -636,6 +656,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 return true;
             }
         }
+        // 非AWS的一切都可以注册
         return true; // Everything non-amazon is registrable.
     }
 
@@ -649,24 +670,34 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private void replicateToPeers(Action action, String appName, String id,
                                   InstanceInfo info /* optional */,
                                   InstanceStatus newStatus /* optional */, boolean isReplication) {
+        // 开启监控
         Stopwatch tracer = action.getTimer().start();
         try {
+            // 是否从其他Eureka-Server节点复制过来的
             if (isReplication) {
+                // 最近每分钟复制次数，作用如下：
+                // 配合 Netflix Servo 实现监控信息采集每分钟复制次数，
+                // Eureka-Server 运维界面的显示续租每分钟次数，
+                // 自我保护机制相关
                 numberOfReplicationsLastMin.increment();
             }
             // If it is a replication already, do not replicate again as this will create a poison replication
+            // 如果已经复制过了，就不需要再复制了
             if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
                 return;
             }
 
             for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                 // If the url represents this host, do not replicate to yourself.
+                // 如果这个服务地址是自身就不进行复制
                 if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
                     continue;
                 }
+                // 进行同步操作
                 replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
             }
         } finally {
+            // 关闭监控
             tracer.stop();
         }
     }
@@ -683,6 +714,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                                  PeerEurekaNode node) {
         try {
             InstanceInfo infoFromRegistry = null;
+            // 设置版本
             CurrentRequestVersion.set(Version.V2);
             switch (action) {
                 case Cancel:

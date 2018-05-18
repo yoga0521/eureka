@@ -80,8 +80,10 @@ public class PeerReplicationResource {
     public Response batchReplication(ReplicationList replicationList) {
         try {
             ReplicationListResponse batchResponse = new ReplicationListResponse();
+            // 逐个同步操作任务处理，并将处理结果ReplicationInstanceResponse合并到ReplicationListResponse
             for (ReplicationInstance instanceInfo : replicationList.getReplicationList()) {
                 try {
+                    // 调用dispatch执行同步操作，并把结果添加到ReplicationListResponse
                     batchResponse.addResponse(dispatch(instanceInfo));
                 } catch (Exception e) {
                     batchResponse.addResponse(new ReplicationInstanceResponse(Status.INTERNAL_SERVER_ERROR.getStatusCode(), null));
@@ -97,11 +99,16 @@ public class PeerReplicationResource {
     }
 
     private ReplicationInstanceResponse dispatch(ReplicationInstance instanceInfo) {
+        // 创建应用Resource(Controller)
         ApplicationResource applicationResource = createApplicationResource(instanceInfo);
+        // 创建实例信息Resource(Controller)
         InstanceResource resource = createInstanceResource(instanceInfo, applicationResource);
 
+        // 获取最近实例信息更新时间戳
         String lastDirtyTimestamp = toString(instanceInfo.getLastDirtyTimestamp());
+        // 获取实例的覆盖状态
         String overriddenStatus = toString(instanceInfo.getOverriddenStatus());
+        // 获取实例状态
         String instanceStatus = toString(instanceInfo.getStatus());
 
         Builder singleResponseBuilder = new Builder();
@@ -135,17 +142,23 @@ public class PeerReplicationResource {
     }
 
     private static Builder handleRegister(ReplicationInstance instanceInfo, ApplicationResource applicationResource) {
+        // 调用ApplicationResource的注册方法
         applicationResource.addInstance(instanceInfo.getInstanceInfo(), REPLICATION);
+        // 返回结果
         return new Builder().setStatusCode(Status.OK.getStatusCode());
     }
 
     private static Builder handleCancel(InstanceResource resource) {
+        // 调用InstanceResource的下线方法
         Response response = resource.cancelLease(REPLICATION);
+        // 返回结果
         return new Builder().setStatusCode(response.getStatus());
     }
 
     private static Builder handleHeartbeat(EurekaServerConfig config, InstanceResource resource, String lastDirtyTimestamp, String overriddenStatus, String instanceStatus) {
+        // 调用InstanceResource的续约方法
         Response response = resource.renewLease(REPLICATION, overriddenStatus, instanceStatus, lastDirtyTimestamp);
+        // 处理返回结果
         int responseStatus = response.getStatus();
         Builder responseBuilder = new Builder().setStatusCode(responseStatus);
 
@@ -163,13 +176,17 @@ public class PeerReplicationResource {
     }
 
     private static Builder handleStatusUpdate(ReplicationInstance instanceInfo, InstanceResource resource) {
+        // 调用InstanceResource的状态更新方法
         Response response = resource.statusUpdate(instanceInfo.getStatus(), REPLICATION, toString(instanceInfo.getLastDirtyTimestamp()));
+        // 返回结果
         return new Builder().setStatusCode(response.getStatus());
     }
 
     private static Builder handleDeleteStatusOverride(ReplicationInstance instanceInfo, InstanceResource resource) {
+        // 调用InstanceResource的移除实例覆盖状态方法
         Response response = resource.deleteStatusUpdate(REPLICATION, instanceInfo.getStatus(),
                 instanceInfo.getLastDirtyTimestamp().toString());
+        // 返回结果
         return new Builder().setStatusCode(response.getStatus());
     }
 

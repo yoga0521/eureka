@@ -75,31 +75,40 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
 
     @Override
     public ProcessingResult process(List<ReplicationTask> tasks) {
+        // 创建批量提交同步操作任务的请求对象
         ReplicationList list = createReplicationListOf(tasks);
         try {
+            // 发起批量提交同步操作任务的请求
             EurekaHttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
+            // 处理返回结果
             int statusCode = response.getStatusCode();
             if (!isSuccess(statusCode)) {
+                // 503是因为被限流，该情况为瞬时错误，会重试该同步操作任务
                 if (statusCode == 503) {
                     logger.warn("Server busy (503) HTTP status code received from the peer {}; rescheduling tasks after delay", peerId);
                     return ProcessingResult.Congestion;
                 } else {
+                    // 非预期状态码，该情况为永久错误，会重试该同步操作任务
                     // Unexpected error returned from the server. This should ideally never happen.
                     logger.error("Batch update failure with HTTP status code {}; discarding {} replication tasks", statusCode, tasks.size());
                     return ProcessingResult.PermanentError;
                 }
             } else {
+                // 请求成功
                 handleBatchResponse(tasks, response.getEntity().getResponseList());
             }
         } catch (Throwable e) {
             if (maybeReadTimeOut(e)) {
+                // 请求超时，该情况为永久错误，会重试该同步操作任务
                 logger.error("It seems to be a socket read timeout exception, it will retry later. if it continues to happen and some eureka node occupied all the cpu time, you should set property 'eureka.server.peer-node-read-timeout-ms' to a bigger value", e);
             	//read timeout exception is more Congestion then TransientError, return Congestion for longer delay 
                 return ProcessingResult.Congestion;
             } else if (isNetworkConnectException(e)) {
+                // 请求发生网络异常，例如网络超时，打印网络异常日志，该情况为永久错误，会重试该同步操作任务
                 logNetworkErrorSample(null, e);
                 return ProcessingResult.TransientError;
             } else {
+                // 非预期异常，该情况为永久错误，会重试该同步操作任务
                 logger.error("Not re-trying this exception because it does not seem to be a network exception", e);
                 return ProcessingResult.PermanentError;
             }
@@ -128,24 +137,30 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     }
 
     private void handleBatchResponse(List<ReplicationTask> tasks, List<ReplicationInstanceResponse> responseList) {
+        // 同步任务和同步响应结果数量不相同
         if (tasks.size() != responseList.size()) {
             // This should ideally never happen unless there is a bug in the software.
             logger.error("Batch response size different from submitted task list ({} != {}); skipping response analysis", responseList.size(), tasks.size());
             return;
         }
+        // 遍历处理结果
         for (int i = 0; i < tasks.size(); i++) {
             handleBatchResponse(tasks.get(i), responseList.get(i));
         }
     }
 
     private void handleBatchResponse(ReplicationTask task, ReplicationInstanceResponse response) {
+        // 获取响应code
         int statusCode = response.getStatusCode();
+        // 处理成功结果
         if (isSuccess(statusCode)) {
+            // 是一个空的方法，没有实现
             task.handleSuccess();
             return;
         }
 
         try {
+            // 处理失败结果
             task.handleFailure(response.getStatusCode(), response.getResponseEntity());
         } catch (Throwable e) {
             logger.error("Replication task {} error handler failure", task.getTaskName(), e);

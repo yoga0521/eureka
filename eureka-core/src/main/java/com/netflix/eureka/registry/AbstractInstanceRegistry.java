@@ -469,9 +469,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
                 }
             }
-            // 最近续租每分钟次数，作用如下：
-            // 配合 Netflix Servo 实现监控信息采集续租每分钟次数，
-            // Eureka-Server 运维界面的显示续租每分钟次数，
+            // 最近每分钟续租次数，作用如下：
+            // 配合 Netflix Servo 实现监控信息采集每分钟续租次数，
+            // Eureka-Server 运维界面的显示每分钟续租次数，
             // 自我保护机制相关
             renewsLastMin.increment();
             // 设置租约最近的续约时间戳
@@ -524,15 +524,20 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     @Override
     public void storeOverriddenStatusIfRequired(String appName, String id, InstanceStatus overriddenStatus) {
+        // 获取覆盖状态
         InstanceStatus instanceStatus = overriddenInstanceStatusMap.get(id);
+        // 如果覆盖状态不存在
         if ((instanceStatus == null) || (!overriddenStatus.equals(instanceStatus))) {
             // We might not have the overridden status if the server got
             // restarted -this will help us maintain the overridden state
             // from the replica
             logger.info("Adding overridden status for instance id {} and the value is {}",
                     id, overriddenStatus.name());
+            // 将覆盖状态保存到覆盖状态集合
             overriddenInstanceStatusMap.put(id, overriddenStatus);
+            // 获取实例信息
             InstanceInfo instanceInfo = this.getInstanceByAppAndId(appName, id, false);
+            // 设置实例覆盖状态
             instanceInfo.setOverriddenStatus(overriddenStatus);
             logger.info("Set the overridden status for instance (appname:{}, id:{}} and the value is {} ",
                     appName, id, overriddenStatus.name());
