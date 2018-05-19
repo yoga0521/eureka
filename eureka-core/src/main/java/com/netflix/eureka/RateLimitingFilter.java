@@ -82,6 +82,9 @@ import org.slf4j.LoggerFactory;
  * </li>
  * </ul>
  *
+ * Eureka-Server 限流过滤器
+ * 使用 RateLimiting ，保证 Eureka-Server 稳定性
+ *
  * @author Tomasz Bak
  */
 @Singleton
@@ -129,7 +132,10 @@ public class RateLimitingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        // 获取目标
         Target target = getTarget(request);
+        // 其他目标（不属于全量获取，增量获取，应用相关），不做限流
+        // RateLimitingFilter只对符合正在表达式 ^.*/apps(/[^/]*)?$ 的接口做限流，其中不包含Eureka-Server集群批量同步接口
         if (target == Target.Other) {
             chain.doFilter(request, response);
             return;
@@ -137,8 +143,11 @@ public class RateLimitingFilter implements Filter {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
 
+        // 判断是否被限流
         if (isRateLimited(httpRequest, target)) {
+            // 监控
             incrementStats(target);
+            // 如果开启了限流，返回503状态码
             if (serverConfig.isRateLimiterEnabled()) {
                 ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return;
@@ -155,16 +164,21 @@ public class RateLimitingFilter implements Filter {
 
             if ("GET".equals(httpRequest.getMethod()) && pathInfo != null) {
                 Matcher matcher = TARGET_RE.matcher(pathInfo);
+                // 与 ^.*/apps(/[^/]*)?$ 正则匹配的接口，需要做限流
                 if (matcher.matches()) {
                     if (matcher.groupCount() == 0 || matcher.group(1) == null || "/".equals(matcher.group(1))) {
+                        // 全量获取注册信息接口
                         target = Target.FullFetch;
                     } else if ("/delta".equals(matcher.group(1))) {
+                        // 增量获取注册信息接口
                         target = Target.DeltaFetch;
                     } else {
+                        // 应用相关接口
                         target = Target.Application;
                     }
                 }
             }
+            // 打印其他目标
             if (target == Target.Other) {
                 logger.debug("URL path {} not matched by rate limiting filter", pathInfo);
             }
@@ -173,10 +187,12 @@ public class RateLimitingFilter implements Filter {
     }
 
     private boolean isRateLimited(HttpServletRequest request, Target target) {
+        // 判断是否特权应用，特权应用不限流
         if (isPrivileged(request)) {
             logger.debug("Privileged {} request", target);
             return false;
         }
+        // 判断是否被超载（限流）
         if (isOverloaded(target)) {
             logger.debug("Overloaded {} request; discarding it", target);
             return true;
@@ -186,9 +202,11 @@ public class RateLimitingFilter implements Filter {
     }
 
     private boolean isPrivileged(HttpServletRequest request) {
+        // 是否对标准客户端开启限流
         if (serverConfig.isRateLimiterThrottleStandardClients()) {
             return false;
         }
+        // 以请求头( "DiscoveryIdentity-Name" ) 判断是否在标准客户端名集合内
         Set<String> privilegedClients = serverConfig.getRateLimiterPrivilegedClients();
         String clientName = request.getHeader(AbstractEurekaIdentity.AUTH_NAME_HEADER_KEY);
         return privilegedClients.contains(clientName) || DEFAULT_PRIVILEGED_CLIENTS.contains(clientName);

@@ -59,11 +59,11 @@ class InstanceInfoReplicator implements Runnable {
      */
     private final RateLimiter rateLimiter;
     /**
-     * 速率限制的burst size
+     * 令牌桶上限，默认为2
      */
     private final int burstSize;
     /**
-     * 允许的每分钟限流频率
+     * 令牌填充的平均速率，默认：60 * 2 / 30 = 4
      */
     private final int allowedRatePerMinute;
 
@@ -116,6 +116,10 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public boolean onDemandUpdate() {
+        // 获取令牌
+        // 若获取成功就向Eureka-Server注册
+        // 若获取失败，InstanceInfoReplicator会定时检查本地应用实例是否向Eureka-Server注册，如果没有，就会再次发起注册；
+        // 续约的时候如果发现Eureka-Server上并没有本地实例的租约（404），会再次发起注册
         if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
             if (!scheduler.isShutdown()) {
                 scheduler.submit(new Runnable() {
